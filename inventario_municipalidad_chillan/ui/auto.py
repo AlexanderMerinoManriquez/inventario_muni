@@ -20,11 +20,11 @@ def build_auto_frame(app, parent) -> None:
             text=f"{texto}:",
             foreground=C["gris_sub"],
             font=("Segoe UI", 9),
-        ).grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=4)
+        ).grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
         var = tk.StringVar(value="Cargando…")
         entry = ttk.Entry(frame, textvariable=var, width=34, state="readonly")
-        entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=4)
+        entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
         app.auto_entries[clave] = {"var": var, "entry": entry}
 
@@ -33,7 +33,7 @@ def build_auto_frame(app, parent) -> None:
     ttk.Button(
         frame,
         text="✎ Editar",
-        style="Small.TButton",
+        style="Edit.TButton",
         command=app._editar_bloque_automatico,
     ).grid(
         row=0,
@@ -70,12 +70,12 @@ def mostrar_discos_en_auto_frame(app) -> None:
             foreground=C["gris_sub"],
             font=("Segoe UI", 9),
         )
-        lbl.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=4)
+        lbl.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
         entry = ttk.Entry(app.auto_frame, width=34, state="normal")
         entry.insert(0, capacidad)
         entry.config(state="readonly")
-        entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=4)
+        entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
         app.discos_widgets.extend([lbl, entry])
         app.discos_entries.append(entry)

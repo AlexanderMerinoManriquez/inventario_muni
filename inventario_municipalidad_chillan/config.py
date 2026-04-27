@@ -205,4 +205,7 @@ C = {
     "dropdown_sel":      "#fff0f3",
     "dropdown_sel_fg":   "#C8102E",
     "dropdown_hover":    "#f5f7ff",
-}
+    "gris_readonly":     "#f8f9fb",
+    "verde_light":       "#e8f5ee",
+    "rojo_estado":       "#C8102E",
+    }

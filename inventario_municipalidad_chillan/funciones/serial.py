@@ -1,12 +1,14 @@
 import subprocess
 
+
 def obtener_serial():
     try:
         output = subprocess.check_output(
-            'powershell "(Get-CimInstance Win32_BIOS).SerialNumber"',
+            "wmic bios get serialnumber",
             shell=True
-        ).decode().strip()
+        ).decode()
 
-        return output
-    except:
+        return output.split("\n")[1].strip()
+
+    except Exception:
         return "SERIAL_DESCONOCIDO"

@@ -4,17 +4,20 @@ from tkinter.scrolledtext import ScrolledText
 
 from config import C, DEPARTAMENTOS_UBICACION
 from ui.buscador import BuscadorDepartamento
+from ui.helpers import Tooltip
 
 
 def build_monitores_frame(app, parent) -> None:
     frame = app._seccion(parent, "Monitores asociados")
 
-    ttk.Button(
+    btn = ttk.Button(
         frame,
         text="＋ Agregar monitor",
-        style="Small.TButton",
+        style="Add.TButton",
         command=app._crear_bloque_monitor,
-    ).pack(anchor="w", padx=10, pady=(4, 4))
+    )
+    btn.pack(anchor="w", padx=10, pady=(4, 6))
+    Tooltip(btn, "Agregar un monitor adicional al registro")
 
     app.monitores_container = ttk.Frame(frame)
     app.monitores_container.pack(fill="x", padx=10, pady=(0, 6))
@@ -23,12 +26,14 @@ def build_monitores_frame(app, parent) -> None:
 def build_impresoras_frame(app, parent) -> None:
     frame = app._seccion(parent, "Impresoras asociadas")
 
-    ttk.Button(
+    btn = ttk.Button(
         frame,
         text="＋ Agregar impresora",
-        style="Small.TButton",
+        style="Add.TButton",
         command=app._crear_bloque_impresora,
-    ).pack(anchor="w", padx=10, pady=(4, 4))
+    )
+    btn.pack(anchor="w", padx=10, pady=(4, 6))
+    Tooltip(btn, "Agregar una impresora adicional al registro")
 
     app.impresoras_container = ttk.Frame(frame)
     app.impresoras_container.pack(fill="x", padx=10, pady=(0, 6))
@@ -37,31 +42,50 @@ def build_impresoras_frame(app, parent) -> None:
 def build_observaciones_frame(app, parent) -> None:
     frame = app._seccion(parent, "Observaciones", fill="both", expand=True)
 
-    app.txt_observaciones = ScrolledText(
+    ttk.Label(
         frame,
-        height=5,
-        wrap="word",
-        font=("Segoe UI", 10),
-        relief="solid",
-        borderwidth=1,
-        background=C["gris_panel"],
-        highlightthickness=0,
-    )
-    app.txt_observaciones.pack(fill="both", expand=True, padx=10, pady=8)
+        text="Ej: equipo con teclado dañado, falta mouse, pendiente limpieza...",
+        foreground=C["gris_placeholder"],
+        font=("Segoe UI", 8),
+    ).pack(anchor="w", padx=10, pady=(0, 4))
+
+    app.txt_observaciones = ScrolledText(
+    frame,
+    height=5,
+    wrap="word",
+    font=("Segoe UI", 10),
+    relief="flat",
+    borderwidth=1,
+    background=C["gris_panel"],
+    highlightthickness=1,
+    highlightbackground=C["gris_borde"],
+    highlightcolor=C["rojo"],
+)
+    app.txt_observaciones.pack(fill="both", expand=True, padx=10, pady=(0, 8))
 
 
 def build_acciones_frame(app, parent) -> None:
-    tk.Frame(parent, bg=C["gris_borde"], height=1).pack(fill="x", pady=(10, 16))
+    tk.Frame(parent, bg=C["gris_borde"], height=1).pack(fill="x", pady=(18, 18))
 
     row = ttk.Frame(parent)
     row.pack(fill="x")
 
-    ttk.Button(
+    app.btn_registrar = ttk.Button(
         row,
         text="  Registrar equipo  ",
         style="Primary.TButton",
         command=app.enviar_datos,
-    ).pack(side="left")
+    )
+    app.btn_registrar.pack(side="left")
+    Tooltip(app.btn_registrar, "Enviar el registro al servidor de inventario")
+
+    # Botón temporal de prueba. Bórralo cuando ya no lo necesites.
+    ttk.Button(
+        row,
+        text="Probar nombre PC",
+        style="Small.TButton",
+        command=app.probar_nombre_equipo,
+    ).pack(side="left", padx=(10, 0))
 
     ttk.Button(
         row,
@@ -105,7 +129,14 @@ def build_manual_frame(app, parent) -> None:
         pady=5,
     )
 
-    app._campo_ubicacion(frame, 2)
+    ttk.Label(
+        frame,
+        text="  ↳ Escribe al menos 2 caracteres para buscar",
+        foreground=C["gris_placeholder"],
+        font=("Segoe UI", 8),
+    ).grid(row=2, column=1, sticky="w", padx=(0, 10), pady=(0, 4))
+
+    app._campo_ubicacion(frame, 3)
     frame.columnconfigure(1, weight=1)
 
 

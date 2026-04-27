@@ -1,16 +1,15 @@
 import subprocess
 
+
 def obtener_grupo_trabajo():
     try:
-        resultado = subprocess.check_output(
-            'powershell "(Get-WmiObject Win32_ComputerSystem).Workgroup"',
+        output = subprocess.check_output(
+            "wmic computersystem get workgroup",
             shell=True
-        ).decode(errors="ignore").strip()
+        ).decode()
 
-        if resultado:
-            return resultado
+        valor = output.split("\n")[1].strip()
+        return valor if valor else "SIN_DEFINIR"
 
-    except Exception as e:
-        print("Error obteniendo grupo de trabajo:", e)
-
-    return "SIN_DEFINIR"
+    except Exception:
+        return "SIN_DEFINIR"

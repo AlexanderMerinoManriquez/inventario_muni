@@ -5,7 +5,6 @@ from datetime import datetime
 from tkinter import messagebox
 
 from funciones.discos.main import obtener_discos_smart
-from funciones.discos.utils import obtener_ruta_smart
 from funciones.monitores import obtener_monitores
 from funciones.impresoras import obtener_impresoras_activas
 from funciones.permisos import admin
@@ -16,6 +15,7 @@ from utils.payload import construir_payload, validar_payload
 from ui.auto import mostrar_discos_en_auto_frame
 from ui.layout import construir_interfaz
 from ui.helpers import seccion, campo, campo_ubicacion
+from utils.rename_pc import generar_nombre_equipo, renombrar_equipo
 
 from ui.bloques import (
     crear_bloque_monitor,
@@ -70,7 +70,9 @@ class InventarioApp:
 
         configurar_estilo()
         construir_interfaz(self)
-        self._cargar_datos_automaticos()
+
+        self._set_estado("● Preparando carga automática…", C["gris_sub"])
+        self.root.after(300, self._cargar_datos_automaticos)
         
     def _seccion(self, parent, titulo, *, fill="x", expand=False, pady=(0, 14)):
         return seccion(parent, titulo, fill=fill, expand=expand, pady=pady)
@@ -85,8 +87,14 @@ class InventarioApp:
         return campo_ubicacion(self, parent, fila)
     
     def _editar_bloque_automatico(self) -> None:
-            entries = [i["entry"] for i in self.auto_entries.values()] + self.discos_entries
-            self._habilitar_grupo_generico(entries)
+        entries = [i["entry"] for i in self.auto_entries.values()] + self.discos_entries
+        self._habilitar_grupo_generico(entries)
+        
+    def _bloquear_envio(self, bloquear: bool) -> None:
+        estado = "disabled" if bloquear else "normal"
+
+        if hasattr(self, "btn_registrar"):
+            self.btn_registrar.config(state=estado)
 
     def _habilitar_grupo_generico(self, entries: list) -> None:
         for e in entries:
@@ -115,6 +123,17 @@ class InventarioApp:
 
         self.var_ubicacion.set(
             DEPARTAMENTOS_UBICACION.get(departamento.strip(), "")
+        )
+    #######################################
+    def probar_nombre_equipo(self) -> None:
+        nombre_sugerido = generar_nombre_equipo(
+            self.var_departamento_manual.get(),
+            self.var_usuario.get()
+        )
+
+        messagebox.showinfo(
+            "Nombre sugerido",
+            f"El nombre sugerido para este equipo es:\n\n{nombre_sugerido}"
         )
         
     def _crear_bloque_monitor(self, datos: dict = None) -> None:
@@ -184,11 +203,10 @@ class InventarioApp:
             self.auto_entries[clave]["var"].set(str(valor))
 
         try:
-            obtener_ruta_smart()
             self.discos_fisicos = obtener_discos_smart()
         except Exception as e:
             self.discos_fisicos = []
-            errores.append(f"discos_smart: {e}")
+            errores.append(f"discos: {e}")
 
         try:
             self.monitores_detectados = obtener_monitores()
@@ -216,9 +234,11 @@ class InventarioApp:
 
         if errores:
             self._set_estado("● Carga parcial con errores", C["amarillo"])
-            messagebox.showwarning("Carga parcial",
+            messagebox.showwarning(
+                "Carga parcial",
                 "La ventana abrió, pero algunos datos automáticos fallaron:\n\n"
-                + "\n".join(errores))
+                + "\n".join(errores),
+            )
         else:
             self._set_estado("● Datos automáticos cargados ✓", C["verde"])
 
@@ -236,49 +256,98 @@ class InventarioApp:
                 "Completa estos campos obligatorios:\n\n— " + "\n— ".join(faltantes),
             )
             return
-        if not messagebox.askyesno("Confirmar registro",
-                                   "¿Confirmas el envío de este inventario?"):
+
+        if not messagebox.askyesno(
+            "Confirmar registro",
+            "¿Confirmas el envío de este inventario?"
+        ):
             return
 
-        try:
-            with open(CONFIG_PATH, encoding="utf-8") as f:
-                url = f.read().strip()
-        except Exception as e:
-            messagebox.showerror("Error de configuración",
-                                 f"No se encontró config.txt\n\n{e}")
-            return
-
-        self._set_estado("● Enviando datos…", C["rojo"])
-        self.root.update_idletasks()
+        self._bloquear_envio(True)
 
         try:
-            resp = requests.post(url, json=payload,
-                                 headers={"ngrok-skip-browser-warning": "true"},
-                                 timeout=60)
             try:
-                rj = resp.json()
-            except Exception:
-                ruta = guardar_respaldo(payload, "RESPUESTA_NO_JSON", resp.text)
-                messagebox.showerror("Respuesta inválida",
-                    f"El servidor no devolvió JSON válido.\n\nRespaldo en:\n{ruta}")
-                self._set_estado("● Error — respuesta no JSON", C["rojo"])
+                with open(CONFIG_PATH, encoding="utf-8") as f:
+                    url = f.read().strip()
+
+                if not url:
+                    messagebox.showerror(
+                        "Configuración incompleta",
+                        "config.txt está vacío. Debes configurar la URL de la API antes de registrar."
+                    )
+                    self._set_estado("● URL no configurada", C["rojo"])
+                    return
+
+            except Exception as e:
+                messagebox.showerror(
+                    "Error de configuración",
+                    f"No se encontró config.txt\n\n{e}"
+                )
                 return
 
-            if rj.get("success") is True:
-                messagebox.showinfo("Registro exitoso",
-                    f"Equipo registrado correctamente.\n\n{rj.get('message', '')}")
-                self._set_estado("● Registrado correctamente ✓", C["verde"])
-            else:
-                ruta = guardar_respaldo(payload, "ERROR_SERVIDOR", resp.text)
-                messagebox.showerror("Error del servidor",
-                    f"Motivo: {rj.get('message', 'Sin mensaje')}\n\nRespaldo:\n{ruta}")
-                self._set_estado("● Error del servidor", C["rojo"])
+            self._set_estado("● Enviando datos…", C["rojo"])
+            self.root.update_idletasks()
 
-        except requests.exceptions.RequestException as e:
-            ruta = guardar_respaldo(payload, "ERROR_ENVIO", str(e))
-            messagebox.showerror("Error de conexión",
-                f"No se pudo conectar con el servidor.\n\n{e}\n\nRespaldo:\n{ruta}")
-            self._set_estado("● Sin conexión", C["rojo"])
+            try:
+                resp = requests.post(
+                    url,
+                    json=payload,
+                    headers={"ngrok-skip-browser-warning": "true"},
+                    timeout=60,
+                )
+
+                try:
+                    rj = resp.json()
+                except Exception:
+                    ruta = guardar_respaldo(payload, "RESPUESTA_NO_JSON", resp.text)
+                    messagebox.showerror(
+                        "Respuesta inválida",
+                        f"El servidor no devolvió JSON válido.\n\nRespaldo en:\n{ruta}"
+                    )
+                    self._set_estado("● Error — respuesta no JSON", C["rojo"])
+                    return
+
+                if rj.get("success") is True:
+                    messagebox.showinfo(
+                        "Registro exitoso",
+                        f"Equipo registrado correctamente.\n\n{rj.get('message', '')}"
+                    )
+
+                    self._set_estado("● Registrado correctamente ✓", C["verde"])
+
+                    nombre_sugerido = generar_nombre_equipo(
+                        self.var_departamento_manual.get(),
+                        self.var_usuario.get()
+                    )
+
+                    if messagebox.askyesno(
+                        "Renombrar equipo",
+                        f"Nombre sugerido: {nombre_sugerido}\n\n¿Deseas renombrar este equipo?"
+                    ):
+                        ok_rename, msg = renombrar_equipo(nombre_sugerido)
+
+                        if ok_rename:
+                            messagebox.showinfo("Equipo renombrado", msg)
+                        else:
+                            messagebox.showerror("Error al renombrar", msg)
+                else:
+                    ruta = guardar_respaldo(payload, "ERROR_SERVIDOR", resp.text)
+                    messagebox.showerror(
+                        "Error del servidor",
+                        f"Motivo: {rj.get('message', 'Sin mensaje')}\n\nRespaldo:\n{ruta}"
+                    )
+                    self._set_estado("● Error del servidor", C["rojo"])
+
+            except requests.exceptions.RequestException as e:
+                ruta = guardar_respaldo(payload, "ERROR_ENVIO", str(e))
+                messagebox.showerror(
+                    "Error de conexión",
+                    f"No se pudo conectar con el servidor.\n\n{e}\n\nRespaldo:\n{ruta}"
+                )
+                self._set_estado("● Sin conexión", C["rojo"])
+
+        finally:
+            self._bloquear_envio(False)
 
 
 # ── Punto de entrada ───────────────────────────────────────────────────────────

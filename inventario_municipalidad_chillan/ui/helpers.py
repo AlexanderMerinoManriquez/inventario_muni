@@ -58,3 +58,46 @@ def campo_ubicacion(app, parent, fila: int) -> ttk.Entry:
     ).grid(row=0, column=1)
 
     return entry
+
+class Tooltip:
+    def __init__(self, widget, texto, delay=600):
+        self.widget = widget
+        self.texto = texto
+        self.delay = delay
+        self._id = None
+        self._win = None
+
+        widget.bind("<Enter>", self._schedule)
+        widget.bind("<Leave>", self._cancel)
+        widget.bind("<ButtonPress>", self._cancel)
+
+    def _schedule(self, _=None):
+        self._cancel()
+        self._id = self.widget.after(self.delay, self._show)
+
+    def _cancel(self, _=None):
+        if self._id:
+            self.widget.after_cancel(self._id)
+            self._id = None
+        if self._win:
+            self._win.destroy()
+            self._win = None
+
+    def _show(self):
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+        self._win = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+
+        tk.Label(
+            tw,
+            text=self.texto,
+            bg="#fffbe6",
+            fg=C["texto"],
+            font=("Segoe UI", 8),
+            relief="solid",
+            borderwidth=1,
+            padx=6,
+            pady=4,
+        ).pack()

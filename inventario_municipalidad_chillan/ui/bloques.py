@@ -1,18 +1,25 @@
 import tkinter as tk
 from tkinter import ttk
 
-from config import CAMPOS_MONITOR, CAMPOS_IMPRESORA
+from config import C, CAMPOS_MONITOR, CAMPOS_IMPRESORA
+
 
 def crear_bloque(app, container, lista: list, titulo: str,
                  campos: list, renumerar, datos: dict = None) -> None:
     datos = datos or {}
 
+    outer = tk.Frame(container, bg=C["gris_borde"], pady=1)
+    outer.pack(fill="x", pady=(0, 8))
+
+    acento = tk.Frame(outer, bg="#e8849a", width=3)
+    acento.pack(side="left", fill="y")
+
     frame = ttk.LabelFrame(
-        container,
-        text=f"  {titulo} {len(lista) + 1}",
+        outer,
+        text=f"  {titulo} {len(lista) + 1}  ",
         style="Section.TLabelframe",
     )
-    frame.pack(fill="x", pady=5)
+    frame.pack(side="left", fill="x", expand=True)
 
     vars_ = {
         k: tk.StringVar(value=str(datos.get(k, "")).lower())
@@ -20,28 +27,35 @@ def crear_bloque(app, container, lista: list, titulo: str,
     }
 
     entries = {
-        k: app._campo(frame, lbl, vars_[k], i, width=22, readonly=True)
+        k: app._campo(frame, lbl, vars_[k], i, width=34, readonly=True)
         for i, (k, lbl) in enumerate(campos)
     }
-
     btns = ttk.Frame(frame)
-    btns.grid(row=0, column=2, rowspan=len(campos), padx=(4, 8), pady=4, sticky="n")
+    btns.grid(
+        row=0,
+        column=2,
+        rowspan=len(campos),
+        padx=(8, 8),
+        pady=6,
+        sticky="n",
+    )
 
     ttk.Button(
         btns,
         text="✎ Editar",
-        style="Small.TButton",
+        style="Edit.TButton",
         command=lambda e=entries: app._habilitar_grupo(e),
-    ).pack(pady=(0, 4))
+    ).pack(pady=(0, 4), fill="x")
 
     ttk.Button(
         btns,
         text="✕ Quitar",
-        style="Small.TButton",
-        command=lambda f=frame: quitar_bloque(f, lista, renumerar),
-    ).pack()
+        style="Remove.TButton",
+        command=lambda f=outer: quitar_bloque(f, lista, renumerar),
+    ).pack(fill="x")
 
-    lista.append({"frame": frame, "entries": entries, **vars_})
+    frame.columnconfigure(1, weight=1)
+    lista.append({"frame": outer, "entries": entries, **vars_})
 
 
 def quitar_bloque(frame, lista: list, renumerar) -> None:
@@ -79,9 +93,15 @@ def crear_bloque_impresora(app, datos: dict = None) -> None:
 
 def renumerar_monitores(app) -> None:
     for i, item in enumerate(app.monitores_vars, 1):
-        item["frame"].configure(text=f"  Monitor {i}")
+        for child in item["frame"].winfo_children():
+            if isinstance(child, ttk.LabelFrame):
+                child.configure(text=f"  Monitor {i}  ")
+                break
 
 
 def renumerar_impresoras(app) -> None:
     for i, item in enumerate(app.impresoras_vars, 1):
-        item["frame"].configure(text=f"  Impresora {i}")
+        for child in item["frame"].winfo_children():
+            if isinstance(child, ttk.LabelFrame):
+                child.configure(text=f"  Impresora {i}  ")
+                break

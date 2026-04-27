@@ -6,7 +6,7 @@ def build_header(self) -> None:
     header = tk.Frame(self.scroll_frame, bg=C["rojo"], bd=0)
     header.pack(fill="x", pady=(0, 22))
     tk.Frame(header, bg=C["rojo_dark"], height=4).pack(fill="x")
-    inner = tk.Frame(header, bg=C["rojo"], padx=20, pady=16)
+    inner = tk.Frame(header, bg=C["rojo"], padx=20, pady=10)
     inner.pack(fill="x")
     banner_loaded = False
     try:
@@ -32,4 +32,4 @@ def build_header(self) -> None:
              font=("Segoe UI", 14, "bold")).pack(anchor="w")
     tk.Label(txt, text="Registro y seguimiento de activos tecnológicos municipales",
              bg=C["rojo"], fg="#ffd6de",
-             font=("Segoe UI", 9)).pack(anchor="w", pady=(3, 0))
+             font=("Segoe UI", 8)).pack(anchor="w", pady=(3, 0))

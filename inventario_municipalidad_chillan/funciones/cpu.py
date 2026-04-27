@@ -1,66 +1,28 @@
-import wmi
-import subprocess
-import platform
+import winreg
 
-def limpiar_cpu(cpu):
 
+def limpiar_cpu(cpu: str) -> str:
+    cpu = str(cpu or "")
     cpu = cpu.replace("(R)", "")
     cpu = cpu.replace("(TM)", "")
     cpu = cpu.replace("CPU", "")
     cpu = cpu.replace("with Radeon Graphics", "")
-
-    cpu = " ".join(cpu.split())
-
-    return cpu.strip()
+    return " ".join(cpu.split()).strip()
 
 
-def obtener_cpu():
-
-    cpu = None
-
+def obtener_cpu() -> str:
     try:
-        c = wmi.WMI()
-        cpu = c.Win32_Processor()[0].Name.strip()
+        ruta = r"HARDWARE\DESCRIPTION\System\CentralProcessor\0"
 
-        if "Family" not in cpu:
-            return limpiar_cpu(cpu)
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, ruta) as key:
+            nombre, _ = winreg.QueryValueEx(key, "ProcessorNameString")
 
-    except:
-        pass
-
-    try:
-        output = subprocess.check_output(
-            'powershell "Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name"',
-            shell=True
-        ).decode().strip()
-
-        if output and "Family" not in output:
-            return limpiar_cpu(output)
-
-    except:
-        pass
-
-    try:
-        output = subprocess.check_output(
-            "wmic cpu get name",
-            shell=True
-        ).decode()
-
-        cpu = output.split("\n")[1].strip()
+        cpu = limpiar_cpu(nombre)
 
         if cpu and "Family" not in cpu:
-            return limpiar_cpu(cpu)
+            return cpu
 
-    except:
-        pass
-
-    try:
-        cpu = platform.processor()
-
-        if cpu:
-            return limpiar_cpu(cpu)
-
-    except:
+    except Exception:
         pass
 
     return "CPU_DESCONOCIDA"
