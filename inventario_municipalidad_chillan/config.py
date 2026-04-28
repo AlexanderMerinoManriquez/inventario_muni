@@ -3,12 +3,10 @@ import socket
 
 from funciones.anydesk import obtener_anydesk
 from funciones.cpu import obtener_cpu
-from funciones.grupo_trabajo import obtener_grupo_trabajo
 from funciones.ip import obtener_ip
 from funciones.ram import obtener_ram
 from funciones.serial import obtener_serial
 from funciones.sistema_operativo import obtener_sistema
-from funciones.uuid import obtener_uuid
 
 # ── Rutas ──────────────────────────────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -20,13 +18,11 @@ BANNER_PATH   = os.path.join(BASE_DIR, "assets", "Bannermuni.png")
 # ── Campos automáticos ────────────────────────────────────────────────────────
 CAMPOS_AUTO = [
     ("nombre_pc",         socket.gethostname,   "Nombre PC"),
-    ("departamento",      obtener_grupo_trabajo, "Departamento PC"),
     ("sistema_operativo", obtener_sistema,       "Sistema operativo"),
     ("anydesk",           obtener_anydesk,       "AnyDesk"),
     ("cpu",               obtener_cpu,           "Procesador"),
     ("ram",               obtener_ram,           "RAM"),
     ("ip",                obtener_ip,            "IP"),
-    ("uuid",              obtener_uuid,          "UUID"),
     ("serial",            obtener_serial,        "N° Serie"),
 ]
 
@@ -206,6 +202,5 @@ C = {
     "dropdown_sel_fg":   "#C8102E",
     "dropdown_hover":    "#f5f7ff",
     "gris_readonly":     "#f8f9fb",
-    "verde_light":       "#e8f5ee",
     "rojo_estado":       "#C8102E",
     }

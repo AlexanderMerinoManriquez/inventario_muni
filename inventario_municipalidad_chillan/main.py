@@ -1,5 +1,6 @@
 import requests
 import tkinter as tk
+import logging
 
 from datetime import datetime
 from tkinter import messagebox
@@ -16,6 +17,7 @@ from ui.auto import mostrar_discos_en_auto_frame
 from ui.layout import construir_interfaz
 from ui.helpers import seccion, campo, campo_ubicacion
 from utils.rename_pc import generar_nombre_equipo, renombrar_equipo
+from utils.logger import setup_logger
 
 from ui.bloques import (
     crear_bloque_monitor,
@@ -31,7 +33,6 @@ from config import(
     C,
     DEPARTAMENTOS_UBICACION,
 )
-
 # ── Aplicación principal ───────────────────────────────────────────────────────
 class InventarioApp:
 
@@ -204,6 +205,7 @@ class InventarioApp:
             except Exception as e:
                 valor = "ERROR"
                 errores.append(f"{clave}: {e}")
+                logging.error(f"Error en {clave}", exc_info=True)
 
             if clave == "ram":
                 valor = formatear_capacidad(valor)
@@ -216,12 +218,14 @@ class InventarioApp:
         except Exception as e:
             self.discos_fisicos = []
             errores.append(f"discos: {e}")
+            logging.error("Error obteniendo discos", exc_info=True)
 
         try:
             self.monitores_detectados = obtener_monitores()
         except Exception as e:
             self.monitores_detectados = []
             errores.append(f"monitores: {e}")
+            logging.error("Error obteniendo monitores", exc_info=True)
 
         mostrar_discos_en_auto_frame(self)
 
@@ -235,6 +239,7 @@ class InventarioApp:
         except Exception as e:
             impresoras = []
             errores.append(f"impresoras: {e}")
+            logging.error("Error obteniendo impresoras", exc_info=True)
 
         for imp in impresoras:
             self._crear_bloque_impresora(imp)
@@ -308,6 +313,8 @@ class InventarioApp:
                 try:
                     rj = resp.json()
                 except Exception:
+                    logging.error("Respuesta del servidor no es JSON válido", exc_info=True)
+
                     ruta = guardar_respaldo(payload, "RESPUESTA_NO_JSON", resp.text)
                     messagebox.showerror(
                         "Respuesta inválida",
@@ -348,6 +355,7 @@ class InventarioApp:
                     self._set_estado("● Error del servidor", C["rojo"])
 
             except requests.exceptions.RequestException as e:
+                logging.error("Error de conexión al enviar datos", exc_info=True)
                 ruta = guardar_respaldo(payload, "ERROR_ENVIO", str(e))
                 messagebox.showerror(
                     "Error de conexión",
@@ -362,6 +370,7 @@ class InventarioApp:
 # ── Punto de entrada ───────────────────────────────────────────────────────────
 def main() -> None:
     try:
+        setup_logger()
         root = tk.Tk()
         InventarioApp(root)
         root.mainloop()

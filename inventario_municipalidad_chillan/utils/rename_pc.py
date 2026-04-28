@@ -1,6 +1,7 @@
 import re
 import subprocess
 import unicodedata
+import socket
 
 
 def _sin_tildes(txt: str) -> str:
@@ -47,6 +48,8 @@ def generar_nombre_equipo(departamento: str, funcionario: str) -> str:
 
 
 def renombrar_equipo(nuevo_nombre: str) -> tuple[bool, str]:
+    if socket.gethostname().upper() == nuevo_nombre.upper():
+        return True, "El equipo ya tiene ese nombre. No se realizaron cambios."
     try:
         cmd = (
             f'wmic computersystem where name="%COMPUTERNAME%" '
