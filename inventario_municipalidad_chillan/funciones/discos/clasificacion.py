@@ -1,21 +1,38 @@
 def clasificar_tipo_disco(modelo, tipo):
+    texto = f"{modelo or ''} {tipo or ''}".lower()
 
-    modelo_lower = modelo.lower()
-    tipo_lower = tipo.lower()
+    claves_ssd = (
+        "ssd",
+        "nvme",
+        "m.2",
+        "pcie",
+        "solid state",
+        "kingston",
+        "crucial",
+        "wd green",
+        "wd blue sn",
+        "samsung mz",
+        "sandisk",
+        "adata",
+        "lexar",
+    )
 
-    # NVMe siempre es SSD
-    if "nvme" in tipo_lower:
+    if any(clave in texto for clave in claves_ssd):
         return "SSD"
 
-    # Si el modelo dice SSD
-    if "ssd" in modelo_lower:
-        return "SSD"
+    claves_hdd = (
+        "hdd",
+        "hard disk",
+        "st",          
+        "wd10",
+        "wd500",
+        "wd320",
+        "toshiba mq",
+        "hitachi",
+        "travelstar",
+    )
 
-    # ATA puede ser HDD o SSD
-    # si no dice SSD en el modelo asumimos HDD
-    if "ata" in tipo_lower:
-        if "ssd" in modelo_lower:
-            return "SSD"
+    if any(clave in texto for clave in claves_hdd):
         return "HDD"
 
-    return "HDD"
+    return "Disco"
