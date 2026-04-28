@@ -7,7 +7,7 @@ class BuscadorDepartamento(tk.Frame):
     MIN_CHARS = 2
     MAX_RESULTADOS = 8
 
-    def __init__(self, parent, opciones, variable, on_select=None):
+    def __init__(self, parent, opciones, variable, on_select=None,  **kwargs):
         super().__init__(parent, bg=C["gris_panel"])
 
         self.opciones = sorted(opciones)
@@ -16,8 +16,19 @@ class BuscadorDepartamento(tk.Frame):
 
         self.var_buscar = tk.StringVar(value=variable.get())
 
-        self.entry = ttk.Entry(self, textvariable=self.var_buscar)
-        self.entry.pack(fill="x")
+        barra = ttk.Frame(self)
+        barra.pack(fill="x")
+
+        tk.Label(
+            barra,
+            text="⌕",
+            bg=C["gris_panel"],
+            fg=C["gris_sub"],
+            font=("Segoe UI", 11, "bold"),
+        ).pack(side="left", padx=(0, 6))
+
+        self.entry = ttk.Entry(barra, textvariable=self.var_buscar, **kwargs)
+        self.entry.pack(side="left", fill="x", expand=True)
 
         self.lista = tk.Listbox(
             self,

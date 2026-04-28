@@ -46,7 +46,7 @@ def configurar_estilo() -> None:
     s.map(
         "TEntry",
         bordercolor=[("focus", C["rojo"]), ("!focus", C["gris_borde"])],
-        fieldbackground=[("readonly", C["gris_readonly"])],
+        fieldbackground=[("readonly", C["gris_readonly"]),("!readonly", C["blanco"])],
     )
 
     s.configure(
@@ -122,8 +122,8 @@ def configurar_estilo() -> None:
 
     s.configure(
         "Edit.TButton",
-        font=("Segoe UI", 8, "bold"),
-        padding=(8, 4),
+        font=("Segoe UI", 9, "bold"),
+        padding=(10, 5),
         background="#eaf2ff",
         foreground="#1d4ed8",
         bordercolor="#bcd4f6",
@@ -139,8 +139,8 @@ def configurar_estilo() -> None:
 
     s.configure(
         "Add.TButton",
-        font=("Segoe UI", 8, "bold"),
-        padding=(8, 4),
+        font=("Segoe UI", 9, "bold"),
+        padding=(12, 6),
         background=C["verde_light"],
         foreground=C["verde"],
         bordercolor="#b7dfc5",
@@ -156,8 +156,8 @@ def configurar_estilo() -> None:
 
     s.configure(
         "Remove.TButton",
-        font=("Segoe UI", 8),
-        padding=(7, 3),
+        font=("Segoe UI", 9),
+        padding=(10, 5),
         background=C["rojo_light"],
         foreground=C["rojo"],
         bordercolor="#efb5c0",

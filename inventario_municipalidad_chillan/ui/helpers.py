@@ -16,13 +16,26 @@ def seccion(parent, titulo, *, fill="x", expand=False, pady=(0, 14)) -> ttk.Labe
 
 
 def campo(parent, texto: str, variable: tk.StringVar, fila: int,
-          width: int = 30, readonly: bool = False) -> ttk.Entry:
+          width: int = 30, readonly: bool = False,
+          obligatorio: bool = False) -> ttk.Entry:
+
+    label_frame = ttk.Frame(parent)
+    label_frame.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
+
     ttk.Label(
-        parent,
+        label_frame,
         text=texto,
         foreground=C["label_claro"],
         font=("Segoe UI", 9),
-    ).grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
+    ).pack(side="left")
+
+    if obligatorio:
+        ttk.Label(
+            label_frame,
+            text="*",
+            foreground=C["rojo"],
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side="left", padx=(2, 0))
 
     entry = ttk.Entry(
         parent,
@@ -32,6 +45,7 @@ def campo(parent, texto: str, variable: tk.StringVar, fila: int,
     )
     entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
     parent.columnconfigure(1, weight=1)
+
     return entry
 
 
@@ -53,7 +67,7 @@ def campo_ubicacion(app, parent, fila: int) -> ttk.Entry:
     ttk.Button(
         inner,
         text="✎ Editar",
-        style="Small.TButton",
+        style="Edit.TButton",
         command=lambda: app._habilitar_grupo_generico([entry]),
     ).grid(row=0, column=1)
 

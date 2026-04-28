@@ -106,14 +106,24 @@ def build_acciones_frame(app, parent) -> None:
 def build_manual_frame(app, parent) -> None:
     frame = app._seccion(parent, "Datos del equipo y ubicación")
 
-    app._campo(frame, "Funcionario responsable:", app.var_usuario, 0)
+    app._campo(frame, "Funcionario responsable:", app.var_usuario, 0, obligatorio=True)
+
+    label_dep = ttk.Frame(frame)
+    label_dep.grid(row=1, column=0, sticky="nw", padx=(10, 6), pady=5)
 
     ttk.Label(
-        frame,
+        label_dep,
         text="Departamento / dirección:",
         foreground=C["label_claro"],
         font=("Segoe UI", 9),
-    ).grid(row=1, column=0, sticky="nw", padx=(10, 6), pady=5)
+    ).pack(side="left")
+
+    ttk.Label(
+        label_dep,
+        text="*",
+        foreground=C["rojo"],
+        font=("Segoe UI", 9, "bold"),
+        ).pack(side="left", padx=(2, 0))
 
     app.buscador_departamento = BuscadorDepartamento(
         frame,
@@ -169,6 +179,6 @@ def build_trazabilidad_frame(app, parent) -> None:
         font=("Segoe UI", 10, "bold"),
     ).pack(side="left")
 
-    app._campo(frame, "Registrado por:", app.var_registrado_por, 1, width=28)
+    app._campo(frame, "Registrado por:", app.var_registrado_por, 1, width=28, obligatorio=True)
     frame.columnconfigure(1, weight=1)
     app._actualizar_reloj()

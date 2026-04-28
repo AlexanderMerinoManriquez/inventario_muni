@@ -37,7 +37,7 @@ def crear_bloque(app, container, lista: list, titulo: str,
         rowspan=len(campos),
         padx=(8, 8),
         pady=6,
-        sticky="n",
+        sticky="ne",
     )
 
     ttk.Button(

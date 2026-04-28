@@ -79,8 +79,17 @@ class InventarioApp:
 
 
     def _campo(self, parent, texto: str, variable: tk.StringVar,
-            fila: int, width: int = 30, readonly: bool = False):
-        return campo(parent, texto, variable, fila, width=width, readonly=readonly)
+            fila: int, width: int = 30, readonly: bool = False,
+            obligatorio: bool = False):
+        return campo(
+            parent,
+            texto,
+            variable,
+            fila,
+            width=width,
+            readonly=readonly,
+            obligatorio=obligatorio,
+        )
 
 
     def _campo_ubicacion(self, parent, fila: int):
