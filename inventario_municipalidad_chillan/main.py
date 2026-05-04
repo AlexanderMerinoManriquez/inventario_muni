@@ -133,9 +133,19 @@ class InventarioApp:
         self.var_rut_funcionario.set(persona.get("rut", ""))
         self.var_departamento_manual.set(persona.get("departamento", ""))
 
+
+    def _limpiar_funcionario(self) -> None:
+        self.var_rut_funcionario.set("")
+        self.var_departamento_manual.set("")
+
+
     def _on_registrado_por_seleccionado(self, persona: dict) -> None:
-        self.var_registrado_por.set(persona.get("nombre", ""))
         self.var_rut_registrado_por.set(persona.get("rut", ""))
+        self.var_registrado_por.set(persona.get("nombre", ""))
+
+
+    def _limpiar_registrador(self) -> None:
+        self.var_registrado_por.set("")
     #######################################
     def probar_nombre_equipo(self) -> None:
         nombre_sugerido = generar_nombre_equipo(
