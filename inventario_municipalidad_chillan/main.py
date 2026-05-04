@@ -15,9 +15,10 @@ from ui.estilos import configurar_estilo
 from utils.payload import construir_payload, validar_payload
 from ui.auto import mostrar_discos_en_auto_frame
 from ui.layout import construir_interfaz
-from ui.helpers import seccion, campo, campo_ubicacion
+from ui.helpers import seccion, campo
 from utils.rename_pc import generar_nombre_equipo, renombrar_equipo
 from utils.logger import setup_logger
+from utils.data_loader import cargar_funcionarios, cargar_usuarios_sistema
 
 from ui.bloques import (
     crear_bloque_monitor,
@@ -31,7 +32,6 @@ from config import(
     ICON_PATH,
     CAMPOS_AUTO,
     C,
-    DEPARTAMENTOS_UBICACION,
 )
 # ── Aplicación principal ───────────────────────────────────────────────────────
 class InventarioApp:
@@ -65,9 +65,15 @@ class InventarioApp:
 
         # Variables de formulario
         self.var_usuario             = tk.StringVar()
-        self.var_registrado_por      = tk.StringVar()
-        self.var_ubicacion           = tk.StringVar()
+        self.var_rut_funcionario     = tk.StringVar()
+        
+        self.var_registrado_por         = tk.StringVar()
+        self.var_rut_registrado_por     = tk.StringVar()
+        
         self.var_departamento_manual = tk.StringVar()
+        
+        self.funcionarios_data = cargar_funcionarios() or []
+        self.usuarios_sistema_data = cargar_usuarios_sistema() or []
 
         configurar_estilo()
         construir_interfaz(self)
@@ -92,10 +98,6 @@ class InventarioApp:
             obligatorio=obligatorio,
         )
 
-
-    def _campo_ubicacion(self, parent, fila: int):
-        return campo_ubicacion(self, parent, fila)
-    
     def _editar_bloque_automatico(self) -> None:
         entries = [i["entry"] for i in self.auto_entries.values()] + self.discos_entries
         self._habilitar_grupo_generico(entries)
@@ -125,15 +127,15 @@ class InventarioApp:
             e.unbind("<Return>")
             e.bind("<FocusOut>", revisar, add="+")
             e.bind("<Return>",   revisar, add="+")
-        
-    def _on_departamento_seleccionado(self, departamento: str) -> None:
-        if not departamento:
-            self.var_ubicacion.set("")
-            return
+                  
+    def _on_funcionario_seleccionado(self, persona: dict) -> None:
+        self.var_usuario.set(persona.get("nombre", ""))
+        self.var_rut_funcionario.set(persona.get("rut", ""))
+        self.var_departamento_manual.set(persona.get("departamento", ""))
 
-        self.var_ubicacion.set(
-            DEPARTAMENTOS_UBICACION.get(departamento.strip(), "")
-        )
+    def _on_registrado_por_seleccionado(self, persona: dict) -> None:
+        self.var_registrado_por.set(persona.get("nombre", ""))
+        self.var_rut_registrado_por.set(persona.get("rut", ""))
     #######################################
     def probar_nombre_equipo(self) -> None:
         nombre_sugerido = generar_nombre_equipo(
@@ -228,6 +230,7 @@ class InventarioApp:
             logging.error("Error obteniendo monitores", exc_info=True)
 
         mostrar_discos_en_auto_frame(self)
+        self._agregar_observacion_discos_secundarios()
 
         for m in self.monitores_detectados:
             self._crear_bloque_monitor(m)
@@ -255,6 +258,64 @@ class InventarioApp:
             )
         else:
             self._set_estado("● Datos automáticos cargados ✓", C["verde"])
+
+
+    def _agregar_observacion_discos_secundarios(self) -> None:
+        if not hasattr(self, "txt_observaciones"):
+            return
+
+        discos = self.discos_fisicos or []
+
+        if len(discos) <= 1:
+            return
+
+        def capacidad_numero(disco):
+            capacidad = str(disco.get("capacidad", "") or "")
+            capacidad = capacidad.upper().replace("GB", "").strip()
+
+            try:
+                return float(capacidad)
+            except ValueError:
+                return 0
+
+        discos_ordenados = sorted(
+            discos,
+            key=lambda d: (
+                str(d.get("tipo", "")).upper() != "SSD",
+                -capacidad_numero(d),
+            ),
+        )
+
+        secundarios = discos_ordenados[1:]
+
+        textos = []
+
+        for disco in secundarios:
+            tipo = str(disco.get("tipo", "disco") or "disco").upper()
+            capacidad = str(disco.get("capacidad", "") or "").strip()
+
+            if capacidad:
+                textos.append(
+                    f"Este equipo cuenta con otro disco de almacenamiento {tipo} de capacidad {capacidad}."
+                )
+            else:
+                textos.append(
+                    f"Este equipo cuenta con otro disco de almacenamiento {tipo}."
+                )
+
+        if not textos:
+            return
+
+        texto_actual = self.txt_observaciones.get("1.0", "end").strip()
+        texto_nuevo = " ".join(textos)
+
+        if texto_nuevo.lower() in texto_actual.lower():
+            return
+
+        if texto_actual:
+            self.txt_observaciones.insert("end", "\n" + texto_nuevo)
+        else:
+            self.txt_observaciones.insert("1.0", texto_nuevo)
 
     def _set_estado(self, texto: str, color: str) -> None:
         self.lbl_estado.config(text=texto, foreground=color)
@@ -309,7 +370,7 @@ class InventarioApp:
                     headers={"ngrok-skip-browser-warning": "true"},
                     timeout=60,
                 )
-
+                
                 try:
                     rj = resp.json()
                 except Exception:

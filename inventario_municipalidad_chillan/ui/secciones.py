@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
-from config import C, DEPARTAMENTOS_UBICACION
-from ui.buscador import BuscadorDepartamento
+from config import C
+from ui.buscador import BuscadorAutocomplete
 from ui.helpers import Tooltip
 
 
@@ -104,51 +104,59 @@ def build_acciones_frame(app, parent) -> None:
 
 
 def build_manual_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Datos del equipo y ubicación")
+    frame = app._seccion(parent, "Datos del equipo y funcionario")
 
-    app._campo(frame, "Funcionario responsable:", app.var_usuario, 0, obligatorio=True)
-
-    label_dep = ttk.Frame(frame)
-    label_dep.grid(row=1, column=0, sticky="nw", padx=(10, 6), pady=5)
+    label_func = ttk.Frame(frame)
+    label_func.grid(row=0, column=0, sticky="nw", padx=(10, 6), pady=5)
 
     ttk.Label(
-        label_dep,
-        text="Departamento / dirección:",
+        label_func,
+        text="Funcionario responsable:",
         foreground=C["label_claro"],
         font=("Segoe UI", 9),
     ).pack(side="left")
 
     ttk.Label(
-        label_dep,
+        label_func,
         text="*",
         foreground=C["rojo"],
         font=("Segoe UI", 9, "bold"),
-        ).pack(side="left", padx=(2, 0))
+    ).pack(side="left", padx=(2, 0))
 
-    app.buscador_departamento = BuscadorDepartamento(
+    app.buscador_funcionario = BuscadorAutocomplete(
         frame,
-        opciones=list(DEPARTAMENTOS_UBICACION.keys()),
-        variable=app.var_departamento_manual,
-        on_select=app._on_departamento_seleccionado,
+        datos=app.funcionarios_data,
+        variable=app.var_usuario,
+        campo_busqueda="nombre",
+        on_select=app._on_funcionario_seleccionado,
     )
-    app.buscador_departamento.grid(
-        row=1,
+    app.buscador_funcionario.grid(
+        row=0,
         column=1,
         sticky="ew",
         padx=(0, 10),
         pady=5,
     )
 
-    ttk.Label(
+    app._campo(frame, "RUT funcionario:", app.var_rut_funcionario, 1, readonly=True)
+
+    app._campo(
         frame,
-        text="  ↳ Escribe al menos 2 caracteres para buscar",
-        foreground=C["gris_placeholder"],
-        font=("Segoe UI", 8),
-    ).grid(row=2, column=1, sticky="w", padx=(0, 10), pady=(0, 4))
-
-    app._campo_ubicacion(frame, 3)
-    frame.columnconfigure(1, weight=1)
-
+        "Departamento:",
+        app.var_departamento_manual,
+        2,
+        readonly=True,
+        obligatorio=True,
+    )
+    
+    ttk.Button(
+        frame,
+        text="✎ Editar",
+        style="Edit.TButton",
+        command=lambda: app._habilitar_grupo_generico([
+            app.buscador_funcionario.entry,
+        ]),
+    ).grid(row=0, column=2, rowspan=3, sticky="n", padx=(4, 8), pady=5)
 
 def build_trazabilidad_frame(app, parent) -> None:
     frame = app._seccion(parent, "Trazabilidad del registro")
@@ -179,6 +187,46 @@ def build_trazabilidad_frame(app, parent) -> None:
         font=("Segoe UI", 10, "bold"),
     ).pack(side="left")
 
-    app._campo(frame, "Registrado por:", app.var_registrado_por, 1, width=28, obligatorio=True)
+    label_reg = ttk.Frame(frame)
+    label_reg.grid(row=1, column=0, sticky="nw", padx=(10, 6), pady=5)
+
+    ttk.Label(
+        label_reg,
+        text="Registrado por:",
+        foreground=C["label_claro"],
+        font=("Segoe UI", 9),
+    ).pack(side="left")
+
+    ttk.Label(
+        label_reg,
+        text="*",
+        foreground=C["rojo"],
+        font=("Segoe UI", 9, "bold"),
+    ).pack(side="left", padx=(2, 0))
+
+    app.buscador_registrado_por = BuscadorAutocomplete(
+        frame,
+        datos=app.usuarios_sistema_data,
+        variable=app.var_registrado_por,
+        campo_busqueda="nombre",
+        on_select=app._on_registrado_por_seleccionado,
+    )
+    app.buscador_registrado_por.grid(
+        row=1,
+        column=1,
+        sticky="ew",
+        padx=(0, 10),
+        pady=5,
+    )
+    app._campo(frame, "RUT registrador:", app.var_rut_registrado_por, 2, readonly=True)
+    ttk.Button(
+        frame,
+        text="✎ Editar",
+        style="Edit.TButton",
+        command=lambda: app._habilitar_grupo_generico([
+            app.buscador_registrado_por.entry,
+        ]),
+    ).grid(row=1, column=2, rowspan=2, sticky="n", padx=(4, 8), pady=5)
+    
     frame.columnconfigure(1, weight=1)
     app._actualizar_reloj()

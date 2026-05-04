@@ -1,18 +1,31 @@
 import tkinter as tk
-
 from tkinter import ttk
+
 from config import C
 
-class BuscadorDepartamento(tk.Frame):
+
+class BuscadorAutocomplete(tk.Frame):
     MIN_CHARS = 2
     MAX_RESULTADOS = 8
 
-    def __init__(self, parent, opciones, variable, on_select=None,  **kwargs):
+    def __init__(
+        self,
+        parent,
+        datos,
+        variable,
+        campo_busqueda="nombre",
+        formato_resultado=None,
+        on_select=None,
+        **kwargs
+    ):
         super().__init__(parent, bg=C["gris_panel"])
 
-        self.opciones = sorted(opciones)
+        self.datos = datos or []
         self.variable = variable
+        self.campo_busqueda = campo_busqueda
+        self.formato_resultado = formato_resultado or self._formato_default
         self.on_select = on_select
+        self.resultados = []
 
         self.var_buscar = tk.StringVar(value=variable.get())
 
@@ -51,6 +64,12 @@ class BuscadorDepartamento(tk.Frame):
         self.entry.bind("<Return>", lambda e: self._seleccionar_primero())
         self.entry.bind("<Escape>", lambda e: self._ocultar_lista())
 
+    def _formato_default(self, item: dict) -> str:
+        nombre = str(item.get(self.campo_busqueda, ""))
+        rut = str(item.get("rut", ""))
+
+        return f"{nombre} — {rut}" if rut else nombre
+
     def _normalizar(self, texto: str) -> str:
         tabla = str.maketrans("áéíóúÁÉÍÓÚüÜñÑ", "aeiouAEIOUuUnN")
         return texto.translate(tabla).replace("-", " ").lower()
@@ -60,8 +79,7 @@ class BuscadorDepartamento(tk.Frame):
 
         if not texto:
             self.variable.set("")
-            if self.on_select:
-                self.on_select("")
+            self.resultados = []
             self._ocultar_lista()
             return
 
@@ -72,27 +90,31 @@ class BuscadorDepartamento(tk.Frame):
         palabras = texto.split()
 
         coinciden = [
-            dep for dep in self.opciones
-            if all(p in self._normalizar(dep) for p in palabras)
+            item for item in self.datos
+            if all(
+                palabra in self._normalizar(str(item.get(self.campo_busqueda, "")))
+                for palabra in palabras
+            )
         ]
 
         empiezan = [
-            dep for dep in coinciden
-            if self._normalizar(dep).startswith(texto)
+            item for item in coinciden
+            if self._normalizar(str(item.get(self.campo_busqueda, ""))).startswith(texto)
         ]
-        resto = [dep for dep in coinciden if dep not in empiezan]
-        resultados = (empiezan + resto)[:self.MAX_RESULTADOS]
+
+        resto = [item for item in coinciden if item not in empiezan]
+        self.resultados = (empiezan + resto)[:self.MAX_RESULTADOS]
 
         self.lista.delete(0, tk.END)
 
-        if not resultados:
+        if not self.resultados:
             self._ocultar_lista()
             return
 
-        for dep in resultados:
-            self.lista.insert(tk.END, dep)
+        for item in self.resultados:
+            self.lista.insert(tk.END, self.formato_resultado(item))
 
-        self.lista.config(height=len(resultados))
+        self.lista.config(height=len(self.resultados))
         self.lista.pack(fill="x", pady=(3, 0))
 
     def _seleccionar_primero(self):
@@ -104,16 +126,19 @@ class BuscadorDepartamento(tk.Frame):
 
     def _seleccionar(self):
         seleccion = self.lista.curselection()
-        if not seleccion:
+
+        if not seleccion or not self.resultados:
             return
 
-        valor = self.lista.get(seleccion[0])
+        item = self.resultados[seleccion[0]]
+        valor = str(item.get(self.campo_busqueda, ""))
+
         self.var_buscar.set(valor)
         self.variable.set(valor)
         self._ocultar_lista()
 
         if self.on_select:
-            self.on_select(valor)
+            self.on_select(item)
 
     def _ocultar_lista(self):
         self.lista.pack_forget()
