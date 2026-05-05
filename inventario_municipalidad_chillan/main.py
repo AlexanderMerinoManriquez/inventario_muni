@@ -12,7 +12,7 @@ from funciones.permisos import admin
 from utils.formato import formatear_capacidad
 from utils.respaldo import guardar_respaldo
 from ui.estilos import configurar_estilo
-from utils.payload import construir_payload, validar_payload
+from utils.payload import construir_payload, validar_payload, normalizar_ram_gb
 from ui.auto import mostrar_discos_en_auto_frame
 from ui.layout import construir_interfaz
 from ui.helpers import seccion, campo
@@ -161,7 +161,37 @@ class InventarioApp:
     def _crear_bloque_monitor(self, datos: dict = None) -> None:
         crear_bloque_monitor(self, datos)
 
+    def _mostrar_estado_impresoras_vacio(self) -> None:
+        if hasattr(self, "lbl_impresoras_vacio"):
+            self.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
+
+    def _ocultar_estado_impresoras_vacio(self) -> None:
+        if hasattr(self, "lbl_impresoras_vacio"):
+            self.lbl_impresoras_vacio.pack_forget()
+
+    def _mostrar_estado_impresoras_vacio(self) -> None:
+        self.impresoras_vars.clear()
+
+        if hasattr(self, "impresoras_container"):
+            for child in self.impresoras_container.winfo_children():
+                child.destroy()
+
+            self.impresoras_container.pack_forget()
+
+        if hasattr(self, "lbl_impresoras_vacio"):
+            self.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
+
+
+    def _ocultar_estado_impresoras_vacio(self) -> None:
+        if hasattr(self, "lbl_impresoras_vacio"):
+            self.lbl_impresoras_vacio.pack_forget()
+
+        if hasattr(self, "impresoras_container"):
+            self.impresoras_container.pack(fill="x", padx=10, pady=(0, 6))
+
+
     def _crear_bloque_impresora(self, datos: dict = None) -> None:
+        self._ocultar_estado_impresoras_vacio()
         crear_bloque_impresora(self, datos)
 
     def _renumerar_monitores(self) -> None:
@@ -220,7 +250,8 @@ class InventarioApp:
                 logging.error(f"Error en {clave}", exc_info=True)
 
             if clave == "ram":
-                valor = formatear_capacidad(valor)
+                ram_normalizada = normalizar_ram_gb(valor)
+                valor = f"{int(ram_normalizada)} GB" if ram_normalizada else formatear_capacidad(valor)
 
             self.datos_auto[clave] = valor
             self.auto_entries[clave]["var"].set(str(valor))
@@ -256,8 +287,9 @@ class InventarioApp:
 
         for imp in impresoras:
             self._crear_bloque_impresora(imp)
+
         if not self.impresoras_vars:
-            self._crear_bloque_impresora({"tipo": "no detectada"})
+            self._mostrar_estado_impresoras_vacio()
 
         if errores:
             self._set_estado("● Carga parcial con errores", C["amarillo"])
@@ -335,7 +367,13 @@ class InventarioApp:
         payload = construir_payload(self)
         ok, faltantes = validar_payload(payload)
 
-        if not ok:
+        if not self.buscador_funcionario.es_seleccion_valida():
+            faltantes.append("Funcionario válido seleccionado desde la lista")
+
+        if not self.buscador_registrado_por.es_seleccion_valida():
+            faltantes.append("Registrador válido seleccionado desde la lista")
+
+        if faltantes:
             messagebox.showwarning(
                 "Faltan datos",
                 "Completa estos campos obligatorios:\n\n— " + "\n— ".join(faltantes),

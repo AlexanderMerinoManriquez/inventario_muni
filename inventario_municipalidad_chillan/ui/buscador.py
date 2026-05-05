@@ -32,7 +32,8 @@ class BuscadorAutocomplete(tk.Frame):
         self.on_select = on_select
         self.on_clear = on_clear
         self.resultados = []
-        self._seleccionado = False   # True sólo tras elegir un ítem de la lista
+        self._seleccionado = False
+        self._trace_id = None
  
         self.var_buscar = tk.StringVar(value=variable.get())
  
@@ -51,8 +52,6 @@ class BuscadorAutocomplete(tk.Frame):
  
         self.entry = ttk.Entry(barra, textvariable=self.var_buscar, **kwargs)
         self.entry.pack(side="left", fill="x", expand=True)
- 
-        # Indicador visual: muestra ✓ verde cuando hay selección válida
         self._lbl_estado = tk.Label(
             barra,
             text="",
@@ -79,8 +78,8 @@ class BuscadorAutocomplete(tk.Frame):
         self.lista.pack_forget()
  
         # ── Bindings ───────────────────────────────────────────────────────────
-        self.var_buscar.trace_add("write", lambda *_: self._on_escribir())
-        self.lista.bind("<ButtonRelease-1>", lambda e: self._seleccionar())
+        self._activar_trace()
+        self.lista.bind("<ButtonPress-1>", self._seleccionar_click)
         self.lista.bind("<Return>",          lambda e: self._seleccionar())
         self.entry.bind("<Return>",          lambda e: self._seleccionar_primero())
         self.entry.bind("<Escape>",          lambda e: self._ocultar_lista())
@@ -94,8 +93,15 @@ class BuscadorAutocomplete(tk.Frame):
     # ── Normalización ──────────────────────────────────────────────────────────
     def _normalizar(self, texto: str) -> str:
         tabla = str.maketrans("áéíóúÁÉÍÓÚüÜñÑ", "aeiouAEIOUuUnN")
-        return texto.translate(tabla).replace("-", " ").lower()
- 
+        texto = str(texto or "").translate(tabla).lower()
+
+        return (
+            texto
+            .replace(".", "")
+            .replace("-", "")
+            .replace(" ", "")
+            .strip()
+        )
     def _formato_default(self, item: dict) -> str:
         rut = str(item.get("rut", "")).strip()
         nombre = str(item.get("nombre", "")).strip()
@@ -112,7 +118,33 @@ class BuscadorAutocomplete(tk.Frame):
             self._lbl_estado.config(text="✓", fg=C.get("verde", "#4caf50"))
         else:
             self._lbl_estado.config(text="")
- 
+    # ── yeahyeahyeah ──────────────────────────────────────────────────────────
+    def _activar_trace(self) -> None:
+        if self._trace_id is None:
+            self._trace_id = self.var_buscar.trace_add(
+                "write",
+                lambda *_: self._on_escribir()
+            )
+            
+    def _desactivar_trace(self) -> None:
+        if self._trace_id is None:
+            return
+
+        try:
+            self.var_buscar.trace_remove("write", self._trace_id)
+        except tk.TclError:
+            pass
+        finally:
+            self._trace_id = None
+
+    def _set_valor_sin_trace(self, valor: str) -> None:
+        self._desactivar_trace()
+
+        try:
+            self.var_buscar.set(valor)
+            self.variable.set(valor)
+        finally:
+            self._activar_trace()
     # ── Eventos de escritura ───────────────────────────────────────────────────
     def _on_escribir(self):
         """Llamado cada vez que cambia el texto. Marca como no-seleccionado."""
@@ -163,17 +195,54 @@ class BuscadorAutocomplete(tk.Frame):
     # ── Navegación con teclado ─────────────────────────────────────────────────
     def _mover_lista(self, delta: int) -> str:
         if not self.resultados:
+            self._filtrar()
+
+        if not self.resultados:
             return "break"
+
+        focus = self.winfo_toplevel().focus_get()
         size = self.lista.size()
         actual = self.lista.curselection()
-        idx = (actual[0] + delta) if actual else (0 if delta > 0 else size - 1)
+
+        if focus == self.entry and delta < 0:
+            self.entry.icursor(tk.END)
+            return "break"
+
+        if focus == self.lista and delta < 0 and (not actual or actual[0] <= 0):
+            self.lista.selection_clear(0, tk.END)
+            self.entry.focus_set()
+            self.entry.icursor(tk.END)
+            return "break"
+
+        if focus == self.entry and delta > 0:
+            idx = 0
+        elif actual:
+            idx = actual[0] + delta
+        else:
+            idx = 0 if delta > 0 else size - 1
+
         idx = max(0, min(idx, size - 1))
+
         self.lista.selection_clear(0, tk.END)
         self.lista.selection_set(idx)
+        self.lista.activate(idx)
         self.lista.see(idx)
         self.lista.focus_set()
+
         return "break"
- 
+    # ── mejora del click ─────────────────────────────────────────────────
+    def _seleccionar_click(self, event):
+        if not self.resultados:
+            return "break"
+
+        idx = self.lista.nearest(event.y)
+
+        if 0 <= idx < len(self.resultados):
+            self.lista.selection_clear(0, tk.END)
+            self.lista.selection_set(idx)
+            self._seleccionar()
+
+        return "break"
     # ── Selección ─────────────────────────────────────────────────────────────
     def _seleccionar_primero(self):
         if self.lista.size() > 0:
@@ -184,51 +253,97 @@ class BuscadorAutocomplete(tk.Frame):
  
     def _seleccionar(self):
         seleccion = self.lista.curselection()
+
         if not seleccion or not self.resultados:
             return
- 
+
         item = self.resultados[seleccion[0]]
         valor = str(item.get(self.campo_valor, "")).strip()
- 
-        # Desconectar trace temporalmente para evitar que _on_escribir
-        # marque como no-seleccionado al hacer .set()
-        self.var_buscar.trace_remove("write", self.var_buscar.trace_info()[0][1])
-        self.var_buscar.set(valor)
-        self.var_buscar.trace_add("write", lambda *_: self._on_escribir())
- 
-        self.variable.set(valor)
+
+        self._set_valor_sin_trace(valor)
         self._ocultar_lista()
         self._marcar_seleccionado(True)
+
         self.entry.focus_set()
- 
+        self.entry.icursor(tk.END)
+
         if self.on_select:
             self.on_select(item)
- 
+ # ── selector coincidencia ────────────────────────────────────────────────────           
+    def _seleccionar_coincidencia_exacta(self) -> bool:
+        texto = self.var_buscar.get().strip()
+
+        if not texto:
+            return False
+
+        texto_norm = self._normalizar(texto)
+
+        for item in self.datos:
+            valores = [
+                item.get(self.campo_valor, ""),
+                item.get(self.campo_busqueda, ""),
+                *[item.get(c, "") for c in self.campos_extra_busqueda],
+            ]
+
+            for valor in valores:
+                if self._normalizar(valor) == texto_norm:
+                    valor_final = str(item.get(self.campo_valor, "")).strip()
+
+                    self._set_valor_sin_trace(valor_final)
+                    self._ocultar_lista()
+                    self._marcar_seleccionado(True)
+
+                    self.entry.focus_set()
+                    self.entry.icursor(tk.END)
+
+                    if self.on_select:
+                        self.on_select(item)
+
+                    return True
+
+        return False
     # ── Validación al salir ────────────────────────────────────────────────────
     def _validar_al_salir(self):
-        """Si el usuario escribió sin seleccionar, limpia el campo."""
+        """Si el usuario escribió sin seleccionar, intenta coincidencia exacta antes de limpiar."""
         focus = self.winfo_toplevel().focus_get()
+
         if focus in (self.entry, self.lista):
-            return  # El foco sigue en el buscador
- 
-        if self.var_buscar.get().strip() and not self._seleccionado:
-            self.var_buscar.set("")
-            self.variable.set("")
-            self._ocultar_lista()
-            if self.on_clear:
-                self.on_clear()
- 
+            return
+
+        if not self.var_buscar.get().strip():
+            return
+
+        if self._seleccionado:
+            return
+
+        if self._seleccionar_coincidencia_exacta():
+            return
+
+        self.var_buscar.set("")
+        self.variable.set("")
+        self._ocultar_lista()
+
+        if self.on_clear:
+            self.on_clear()
+    
     # ── Visibilidad de la lista ────────────────────────────────────────────────
     def _ocultar_lista(self):
         self.lista.pack_forget()
  
     # ── API pública ────────────────────────────────────────────────────────────
     def set_valor_externo(self, valor: str, item: dict = None) -> None:
-        """Establece un valor programáticamente (sin disparar validación)."""
-        self.var_buscar.trace_remove("write", self.var_buscar.trace_info()[0][1])
-        self.var_buscar.set(valor)
-        self.var_buscar.trace_add("write", lambda *_: self._on_escribir())
-        self.variable.set(valor)
+        """Establece un valor programáticamente sin disparar la validación."""
+        self._set_valor_sin_trace(valor)
         self._marcar_seleccionado(True)
+        self.entry.icursor(tk.END)
+
         if item and self.on_select:
             self.on_select(item)
+
+
+    def invalidar_seleccion(self) -> None:
+        self._marcar_seleccionado(False)
+
+
+    def es_seleccion_valida(self) -> bool:
+        return self._seleccionado

@@ -1,6 +1,5 @@
 import csv
 
-
 def cargar_funcionarios(path="data/funcionarios.csv"):
     personas = []
 

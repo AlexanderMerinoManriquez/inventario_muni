@@ -5,7 +5,9 @@ from config import C, CAMPOS_MONITOR, CAMPOS_IMPRESORA
 
 
 def crear_bloque(app, container, lista: list, titulo: str,
-                 campos: list, renumerar, datos: dict = None) -> None:
+                 campos: list, renumerar, datos: dict = None,
+                 permitir_vacio: bool = False,
+                 on_empty=None) -> None:
     datos = datos or {}
 
     outer = tk.Frame(container, bg=C["gris_borde"], pady=1)
@@ -51,20 +53,32 @@ def crear_bloque(app, container, lista: list, titulo: str,
         btns,
         text="✕ Quitar",
         style="Remove.TButton",
-        command=lambda f=outer: quitar_bloque(f, lista, renumerar),
+        command=lambda f=outer: quitar_bloque(
+            f,
+            lista,
+            renumerar,
+            permitir_vacio=permitir_vacio,
+            on_empty=on_empty,
+        ),
     ).pack(fill="x")
 
     frame.columnconfigure(1, weight=1)
     lista.append({"frame": outer, "entries": entries, **vars_})
 
 
-def quitar_bloque(frame, lista: list, renumerar) -> None:
-    if len(lista) == 1:
+def quitar_bloque(frame, lista: list, renumerar,
+                  permitir_vacio: bool = False,
+                  on_empty=None) -> None:
+    if len(lista) == 1 and not permitir_vacio:
         return
 
     lista[:] = [item for item in lista if item["frame"] != frame]
     frame.destroy()
-    renumerar()
+
+    if lista:
+        renumerar()
+    elif on_empty:
+        on_empty()
 
 
 def crear_bloque_monitor(app, datos: dict = None) -> None:
@@ -88,6 +102,8 @@ def crear_bloque_impresora(app, datos: dict = None) -> None:
         CAMPOS_IMPRESORA,
         lambda: renumerar_impresoras(app),
         datos,
+        permitir_vacio=True,
+        on_empty=app._mostrar_estado_impresoras_vacio,
     )
 
 
