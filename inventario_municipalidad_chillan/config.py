@@ -26,6 +26,14 @@ CAMPOS_AUTO = [
     ("serial",            obtener_serial,        "N° Serie"),
 ]
 
+DB_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "database": "inventario_municipalidad",
+    "charset": "utf8mb4",
+}
+
 CAMPOS_MONITOR   = [("marca", "Marca:"), ("modelo", "Modelo:"), ("pulgadas", "Pulgadas:")]
 CAMPOS_IMPRESORA = [("tipo", "Tipo:"), ("marca", "Marca:"), ("modelo", "Modelo:"),
                     ("ip", "IP:"), ("toner_tinta", "Tóner / Tinta:")]
