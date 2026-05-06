@@ -8,6 +8,7 @@ from tkinter import messagebox
 from funciones.discos.main import obtener_discos_smart
 from funciones.monitores import obtener_monitores
 from funciones.impresoras import obtener_impresoras_activas
+from funciones.tipo_equipo import detectar_tipo_equipo, texto_tipo_equipo_integrado
 from funciones.permisos import admin
 from utils.formato import formatear_capacidad
 from utils.respaldo import guardar_respaldo
@@ -57,6 +58,7 @@ class InventarioApp:
         self.datos_auto             = {}
         self.discos_fisicos         = []
         self.monitores_detectados   = []
+        self.tipo_equipo_fisico     = "DESCONOCIDO"
         self.monitores_vars         = []
         self.impresoras_vars        = []
         self.auto_entries           = {}
@@ -254,6 +256,13 @@ class InventarioApp:
             admin()
         except Exception as e:
             errores.append(f"admin(): {e}")
+            
+        try:
+            self.tipo_equipo_fisico = detectar_tipo_equipo()
+        except Exception as e:
+            self.tipo_equipo_fisico = "DESCONOCIDO"
+            errores.append(f"tipo_equipo: {e}")
+            logging.error("Error detectando tipo físico del equipo", exc_info=True)
 
         for clave, fn, _ in CAMPOS_AUTO:
             try:
@@ -287,7 +296,20 @@ class InventarioApp:
         mostrar_discos_en_auto_frame(self)
         self._agregar_observacion_discos_secundarios()
 
-        for m in self.monitores_detectados:
+        monitores_integrados = [
+            m for m in self.monitores_detectados
+            if m.get("es_pantalla_integrada")
+        ]
+
+        monitores_externos = [
+            m for m in self.monitores_detectados
+            if not m.get("es_pantalla_integrada")
+        ]
+
+        if monitores_integrados:
+            self._agregar_observacion_pantallas_integradas(monitores_integrados)
+
+        for m in monitores_externos:
             self._crear_bloque_monitor(m)
 
         if not self.monitores_vars:
@@ -315,6 +337,87 @@ class InventarioApp:
             )
         else:
             self._set_estado("● Datos automáticos cargados ✓", C["verde"])
+    # ── observacion de monitor(all in one, notebook) ──────────────────────────────────────────────
+    def _agregar_observacion_automatica(self, texto: str) -> None:
+        if not hasattr(self, "txt_observaciones"):
+            return
+
+        texto = str(texto or "").strip()
+
+        if not texto:
+            return
+
+        if not texto.startswith("•"):
+            texto = f"• {texto}"
+
+        texto_actual = self.txt_observaciones.get("1.0", "end").strip()
+
+        if texto.lower() in texto_actual.lower():
+            return
+
+        if texto_actual:
+            self.txt_observaciones.insert("end", "\n\n" + texto)
+        else:
+            self.txt_observaciones.insert("1.0", texto)
+
+
+    def _agregar_observacion_pantallas_integradas(self, monitores: list[dict]) -> None:
+        if not hasattr(self, "txt_observaciones") or not monitores:
+            return
+
+        detalles = []
+
+        for monitor in monitores:
+            marca = str(monitor.get("marca") or "").strip()
+            modelo = str(monitor.get("modelo") or "").strip()
+            pulgadas = str(monitor.get("pulgadas") or "").strip()
+            serial = str(monitor.get("numero_de_serie") or "").strip()
+            conexion = str(monitor.get("conexion") or "").strip()
+
+            partes = []
+
+            if marca:
+                partes.append(f"marca {marca}")
+
+            if modelo:
+                partes.append(f"modelo {modelo}")
+
+            if pulgadas:
+                partes.append(f"{pulgadas} pulgadas")
+
+            if serial:
+                partes.append(f"N° serie {serial}")
+
+            if conexion:
+                partes.append(f"conexión {conexion}")
+
+            detalle = ", ".join(partes)
+
+            if detalle:
+                detalles.append(f"({detalle})")
+
+        tipo_integrado = texto_tipo_equipo_integrado(
+            getattr(self, "tipo_equipo_fisico", "DESCONOCIDO")
+        )
+
+        if len(monitores) == 1:
+            texto_nuevo = f"Se detectó una pantalla integrada {tipo_integrado}"
+
+            if detalles:
+                texto_nuevo += f" {detalles[0]}"
+
+            texto_nuevo += "; no se registra como monitor independiente."
+        else:
+            texto_nuevo = (
+                f"Se detectaron {len(monitores)} pantallas integradas {tipo_integrado}"
+            )
+
+            if detalles:
+                texto_nuevo += ": " + "; ".join(detalles)
+
+            texto_nuevo += ". No se registran como monitores independientes."
+
+        self._agregar_observacion_automatica(texto_nuevo)
 
 
     def _agregar_observacion_discos_secundarios(self) -> None:
@@ -344,7 +447,6 @@ class InventarioApp:
         )
 
         secundarios = discos_ordenados[1:]
-
         textos = []
 
         for disco in secundarios:
@@ -363,16 +465,8 @@ class InventarioApp:
         if not textos:
             return
 
-        texto_actual = self.txt_observaciones.get("1.0", "end").strip()
         texto_nuevo = " ".join(textos)
-
-        if texto_nuevo.lower() in texto_actual.lower():
-            return
-
-        if texto_actual:
-            self.txt_observaciones.insert("end", "\n" + texto_nuevo)
-        else:
-            self.txt_observaciones.insert("1.0", texto_nuevo)
+        self._agregar_observacion_automatica(texto_nuevo)
 
     def _set_estado(self, texto: str, color: str) -> None:
         self.lbl_estado.config(text=texto, foreground=color)
@@ -489,8 +583,6 @@ class InventarioApp:
 
         finally:
             self._bloquear_envio(False)
-
-
 # ── Punto de entrada ───────────────────────────────────────────────────────────
 def main() -> None:
     try:
