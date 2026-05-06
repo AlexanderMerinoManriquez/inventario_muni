@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+logs/
+*.log
+
+RESPALDOS_FALLIDOS/
+
+.venv/
+venv/
+
+build/
+dist/
