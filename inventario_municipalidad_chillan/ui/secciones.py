@@ -61,14 +61,29 @@ def _crear_frame_activos(app, parent, titulo: str, texto_boton: str, command, to
 
 
 def build_monitores_frame(app, parent) -> None:
-    app.monitores_container = _crear_frame_activos(
-        app,
-        parent,
-        "Monitores asociados",
-        "＋ Agregar monitor",
-        app._crear_bloque_monitor,
-        "Agregar un monitor adicional al registro",
+    frame = app._seccion(parent, "Monitores asociados")
+
+    btn = ttk.Button(
+        frame,
+        text="＋ Agregar monitor",
+        style="Add.TButton",
+        command=app._crear_bloque_monitor,
     )
+    btn.pack(anchor="w", padx=10, pady=(4, 6))
+    Tooltip(btn, "Agregar un monitor manualmente si corresponde")
+
+    app.lbl_monitores_vacio = ttk.Label(
+        frame,
+        text="No se detectaron monitores. Puedes agregar uno manualmente si corresponde.",
+        foreground=C["gris_sub"],
+        font=("Segoe UI", 9),
+    )
+    app.lbl_monitores_vacio.pack(fill="x", padx=10, pady=(0, 8))
+    app.lbl_monitores_vacio.pack_forget()
+
+    app.monitores_container = ttk.Frame(frame)
+    app.monitores_container.pack(fill="x", padx=10, pady=(0, 6))
+    app.monitores_container.pack_forget()
 
 
 def build_impresoras_frame(app, parent) -> None:
@@ -219,8 +234,6 @@ def build_manual_frame(app, parent) -> None:
         padx=(0, 8),
         pady=5,
     )
-
-
 def build_trazabilidad_frame(app, parent) -> None:
     frame = app._seccion(parent, "Trazabilidad del registro")
     frame.columnconfigure(1, weight=1)

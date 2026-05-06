@@ -7,7 +7,8 @@ from config import C, CAMPOS_MONITOR, CAMPOS_IMPRESORA
 def crear_bloque(app, container, lista: list, titulo: str,
                  campos: list, renumerar, datos: dict = None,
                  permitir_vacio: bool = False,
-                 on_empty=None) -> None:
+                 on_empty=None,
+                 iniciar_editable: bool = False) -> None:
     datos = datos or {}
 
     outer = tk.Frame(container, bg=C["gris_borde"], pady=1)
@@ -24,7 +25,7 @@ def crear_bloque(app, container, lista: list, titulo: str,
     frame.pack(side="left", fill="x", expand=True)
 
     vars_ = {
-        k: tk.StringVar(value=str(datos.get(k, "")).lower())
+        k: tk.StringVar(value=str(datos.get(k, "") or "").strip())
         for k, _ in campos
     }
 
@@ -65,6 +66,9 @@ def crear_bloque(app, container, lista: list, titulo: str,
     frame.columnconfigure(1, weight=1)
     lista.append({"frame": outer, "entries": entries, **vars_})
 
+    if iniciar_editable:
+        app.root.after_idle(lambda e=entries: app._habilitar_grupo(e))
+
 
 def quitar_bloque(frame, lista: list, renumerar,
                   permitir_vacio: bool = False,
@@ -82,6 +86,8 @@ def quitar_bloque(frame, lista: list, renumerar,
 
 
 def crear_bloque_monitor(app, datos: dict = None) -> None:
+    es_manual = datos is None
+
     crear_bloque(
         app,
         app.monitores_container,
@@ -90,10 +96,14 @@ def crear_bloque_monitor(app, datos: dict = None) -> None:
         CAMPOS_MONITOR,
         lambda: renumerar_monitores(app),
         datos,
+        permitir_vacio=True,
+        on_empty=app._mostrar_estado_monitores_vacio,
+        iniciar_editable=es_manual,
     )
-
-
+    
 def crear_bloque_impresora(app, datos: dict = None) -> None:
+    es_manual = datos is None
+
     crear_bloque(
         app,
         app.impresoras_container,
@@ -104,6 +114,7 @@ def crear_bloque_impresora(app, datos: dict = None) -> None:
         datos,
         permitir_vacio=True,
         on_empty=app._mostrar_estado_impresoras_vacio,
+        iniciar_editable=es_manual,
     )
 
 

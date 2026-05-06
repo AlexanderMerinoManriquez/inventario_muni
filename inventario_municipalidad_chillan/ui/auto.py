@@ -76,32 +76,54 @@ def mostrar_discos_en_auto_frame(app) -> None:
 
     app.discos_widgets.clear()
     app.discos_entries.clear()
-
-    disco = _disco_principal(app.discos_fisicos)
-
-    if not disco:
-        return
-
-    tipo = str(disco.get("tipo", "") or "Disco").strip()
-    capacidad = formatear_capacidad(str(disco.get("capacidad", "") or "").strip())
-
-    if not capacidad:
-        return
+    app.auto_entries.pop("codigo_inventario_equipo", None)
 
     fila = app.fila_discos_inicio
 
-    lbl = ttk.Label(
+    disco = _disco_principal(app.discos_fisicos)
+
+    if disco:
+        tipo = str(disco.get("tipo", "") or "Disco").strip()
+        capacidad = formatear_capacidad(str(disco.get("capacidad", "") or "").strip())
+
+        if capacidad:
+            lbl_disco = ttk.Label(
+                app.auto_frame,
+                text=f"{tipo}:",
+                foreground=C["gris_sub"],
+                font=("Segoe UI", 9),
+            )
+            lbl_disco.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
+
+            entry_disco = ttk.Entry(app.auto_frame, width=34, state="normal")
+            entry_disco.insert(0, capacidad)
+            entry_disco.config(state="readonly")
+            entry_disco.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
+
+            app.discos_widgets.extend([lbl_disco, entry_disco])
+            app.discos_entries.append(entry_disco)
+
+            fila += 1
+
+    lbl_codigo = ttk.Label(
         app.auto_frame,
-        text=f"{tipo}:",
+        text="Código inventario:",
         foreground=C["gris_sub"],
         font=("Segoe UI", 9),
     )
-    lbl.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
+    lbl_codigo.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
-    entry = ttk.Entry(app.auto_frame, width=34, state="normal")
-    entry.insert(0, capacidad)
-    entry.config(state="readonly")
-    entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
+    var_codigo = tk.StringVar(value="")
+    entry_codigo = ttk.Entry(
+        app.auto_frame,
+        textvariable=var_codigo,
+        width=34,
+        state="readonly",
+    )
+    entry_codigo.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
-    app.discos_widgets.extend([lbl, entry])
-    app.discos_entries.append(entry)
+    app.discos_widgets.extend([lbl_codigo, entry_codigo])
+    app.auto_entries["codigo_inventario_equipo"] = {
+        "var": var_codigo,
+        "entry": entry_codigo,
+    }

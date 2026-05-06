@@ -158,16 +158,31 @@ class InventarioApp:
             f"El nombre sugerido para este equipo es:\n\n{nombre_sugerido}"
         )
         
+    def _mostrar_estado_monitores_vacio(self) -> None:
+        self.monitores_vars.clear()
+
+        if hasattr(self, "monitores_container"):
+            for child in self.monitores_container.winfo_children():
+                child.destroy()
+
+            self.monitores_container.pack_forget()
+
+        if hasattr(self, "lbl_monitores_vacio"):
+            self.lbl_monitores_vacio.pack(fill="x", padx=10, pady=(0, 8))
+
+
+    def _ocultar_estado_monitores_vacio(self) -> None:
+        if hasattr(self, "lbl_monitores_vacio"):
+            self.lbl_monitores_vacio.pack_forget()
+
+        if hasattr(self, "monitores_container"):
+            self.monitores_container.pack(fill="x", padx=10, pady=(0, 6))
+
+
     def _crear_bloque_monitor(self, datos: dict = None) -> None:
+        self._ocultar_estado_monitores_vacio()
         crear_bloque_monitor(self, datos)
 
-    def _mostrar_estado_impresoras_vacio(self) -> None:
-        if hasattr(self, "lbl_impresoras_vacio"):
-            self.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
-
-    def _ocultar_estado_impresoras_vacio(self) -> None:
-        if hasattr(self, "lbl_impresoras_vacio"):
-            self.lbl_impresoras_vacio.pack_forget()
 
     def _mostrar_estado_impresoras_vacio(self) -> None:
         self.impresoras_vars.clear()
@@ -220,7 +235,6 @@ class InventarioApp:
             e.unbind("<Return>")
             e.bind("<FocusOut>", revisar, add="+")
             e.bind("<Return>",   revisar, add="+")
-
     # ── Reloj ─────────────────────────────────────────────────────────────────
     def _actualizar_reloj(self) -> None:
         self.var_fecha_hora_visible.set(datetime.now().strftime("%Y-%m-%d   %H:%M:%S"))
@@ -275,8 +289,9 @@ class InventarioApp:
 
         for m in self.monitores_detectados:
             self._crear_bloque_monitor(m)
+
         if not self.monitores_vars:
-            self._crear_bloque_monitor()
+            self._mostrar_estado_monitores_vacio()
 
         try:
             impresoras = obtener_impresoras_activas()
