@@ -31,6 +31,9 @@ SERIALES_INVALIDOS = {
     "SIN_SERIE",
     "N/A",
     "NA",
+    "USB001",
+    "USB002",
+    "USB003",
 }
 
 
@@ -42,13 +45,49 @@ def _normalizar_clave(valor: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(valor or "").lower())
 
 
+def _es_guid(valor: str) -> bool:
+    return bool(
+        re.fullmatch(
+            r"\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?",
+            str(valor or "").strip().upper(),
+        )
+    )
+
+
 def _normalizar_serial(valor: str) -> str:
-    serial = str(valor or "").strip().upper()
+    serial = str(valor or "").strip().upper().strip("{}")
 
     if serial in SERIALES_INVALIDOS:
         return ""
 
     if len(serial) < 5:
+        return ""
+
+    # Rechaza GUID/UUID de Windows, WSD o PnP.
+    if _es_guid(serial):
+        return ""
+
+    patrones_invalidos = (
+        "WSD",
+        "SWD\\",
+        "USBPRINT\\",
+        "ROOT\\",
+        "PRINTENUM\\",
+        "UMB\\",
+        "BTH\\",
+        "BTHENUM\\",
+        "MS_BTH",
+    )
+
+    if any(p in serial for p in patrones_invalidos):
+        return ""
+
+    # Si contiene separadores de ruta, no debe llegar completo como serial.
+    if "\\" in serial or "/" in serial:
+        return ""
+
+    # Si contiene &, normalmente es parte de una ruta interna de Windows.
+    if "&" in serial:
         return ""
 
     return serial
@@ -168,24 +207,28 @@ def _sugerir_consumible(nombre: str, driver: str, modelo: str = "") -> str:
     return ""
 
 
-def _extraer_serial_desde_pnp(device_id: str) -> str:
+def _extraer_serial_desde_ruta(valor: str) -> str:
     """
-    Intenta extraer un serial desde DeviceID/PNPDeviceID.
+    Extrae un posible serial desde rutas PnP/USB.
 
-    Se evita usar valores con '&' porque normalmente son rutas internas
-    de Windows y pueden no corresponder al serial real del equipo.
+    Ejemplo válido:
+    USB\\VID_03F0&PID_0274\\BRBSTB80DJ
+    → BRBSTB80DJ
+
+    Ejemplos inválidos:
+    SWD\\PRINTENUM\\{C4583CAA-53E3-4B23-8319-DE7BA2CDF018}
+    USBPRINT\\HPHP_LASERJET_PRO_4003\\8&315C8AC&0&USB001
+    USB\\VID_03F0&PID_0274&MI_03\\7&38FDD011&1&C003
     """
-    texto = _normalizar_texto(device_id)
+    texto = _normalizar_texto(valor)
 
     if not texto or "\\" not in texto:
-        return ""
+        return _normalizar_serial(texto)
 
     candidato = texto.split("\\")[-1].strip()
-
-    if "&" in candidato:
-        return ""
-
+    candidato = candidato.strip("{}")
     candidato = re.sub(r"[^A-Za-z0-9\-_.]", "", candidato)
+
     return _normalizar_serial(candidato)
 
 
@@ -202,10 +245,10 @@ def _buscar_serial_impresora(
 
     for disp in dispositivos_pnp:
         nombre_pnp = _normalizar_texto(disp.get("Name"))
-        device_id = _normalizar_texto(
-            disp.get("DeviceID")
-            or disp.get("PNPDeviceID")
-        )
+        device_id = _normalizar_texto(disp.get("DeviceID"))
+        pnp_device_id = _normalizar_texto(disp.get("PNPDeviceID"))
+        parent_device_id = _normalizar_texto(disp.get("ParentDeviceID"))
+        bus_parent = _normalizar_texto(disp.get("BusParent"))
 
         nombre_pnp_key = _normalizar_clave(nombre_pnp)
 
@@ -223,10 +266,17 @@ def _buscar_serial_impresora(
         if not coincide:
             continue
 
-        serial = _extraer_serial_desde_pnp(device_id)
+        # Prioridad 1: ParentDeviceID, porque ahí Windows suele exponer el serial USB real.
+        for candidato in (
+            parent_device_id,
+            bus_parent,
+            device_id,
+            pnp_device_id,
+        ):
+            serial = _extraer_serial_desde_ruta(candidato)
 
-        if serial:
-            return serial
+            if serial:
+                return serial
 
     return ""
 
@@ -239,18 +289,48 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $printers = Get-CimInstance Win32_Printer |
     Select-Object Name, DriverName, PortName, WorkOffline, Default, PrinterStatus
 
-$pnp = Get-CimInstance Win32_PnPEntity |
+$pnpBase = Get-CimInstance Win32_PnPEntity |
     Where-Object {
-        $_.PNPClass -in @('Printer', 'PrintQueue') -or
+        $_.PNPClass -in @('Printer', 'PrintQueue', 'USBDevice', 'USB') -or
         $_.Service -eq 'usbprint' -or
-        $_.Name -match 'printer|laserjet|deskjet|officejet|epson|canon|brother|xerox|ricoh|kyocera|samsung'
-    } |
-    Select-Object Name, DeviceID, PNPDeviceID, Manufacturer, Service, PNPClass
+        $_.Service -eq 'WINUSB' -or
+        $_.Name -match 'printer|laserjet|deskjet|officejet|epson|canon|brother|xerox|ricoh|kyocera|samsung|hp'
+    }
+
+$pnp = foreach ($d in $pnpBase) {
+    $parent = ""
+    $busParent = ""
+
+    try {
+        $propParent = Get-PnpDeviceProperty -InstanceId $d.PNPDeviceID -KeyName 'DEVPKEY_Device_Parent' -ErrorAction SilentlyContinue
+        if ($propParent -and $propParent.Data) {
+            $parent = [string]$propParent.Data
+        }
+    } catch {}
+
+    try {
+        $propBus = Get-PnpDeviceProperty -InstanceId $d.PNPDeviceID -KeyName '{83DA6326-97A6-4088-9453-A1923F573B29} 10' -ErrorAction SilentlyContinue
+        if ($propBus -and $propBus.Data) {
+            $busParent = [string]$propBus.Data
+        }
+    } catch {}
+
+    [PSCustomObject]@{
+        Name = $d.Name
+        DeviceID = $d.DeviceID
+        PNPDeviceID = $d.PNPDeviceID
+        ParentDeviceID = $parent
+        BusParent = $busParent
+        Manufacturer = $d.Manufacturer
+        Service = $d.Service
+        PNPClass = $d.PNPClass
+    }
+}
 
 [PSCustomObject]@{
     Printers = @($printers)
     PnP = @($pnp)
-} | ConvertTo-Json -Depth 5 -Compress
+} | ConvertTo-Json -Depth 6 -Compress
 """
 
     try:
@@ -267,7 +347,7 @@ $pnp = Get-CimInstance Win32_PnPEntity |
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=25,
+            timeout=30,
         )
 
         if proc.returncode != 0 or not proc.stdout.strip():
@@ -297,13 +377,14 @@ $pnp = Get-CimInstance Win32_PnPEntity |
 
             marca = _inferir_marca(nombre, driver)
             modelo = _inferir_modelo(nombre, driver, marca).lower()
+            ip = _extraer_ip(puerto)
             serial = _buscar_serial_impresora(nombre, driver, pnp_data)
 
             resultado.append({
                 "tipo": _inferir_tipo(nombre, driver),
                 "marca": marca.lower(),
                 "modelo": modelo,
-                "ip": _extraer_ip(puerto),
+                "ip": ip,
                 "toner_tinta": _sugerir_consumible(nombre, driver, modelo),
                 "numero_de_serie": serial,
             })
