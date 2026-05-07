@@ -4,6 +4,37 @@ from tkinter import ttk
 from config import C, CAMPOS_MONITOR, CAMPOS_IMPRESORA
 
 
+CAMPOS_IDENTIFICADOR = {
+    "numero_de_serie",
+    "codigo_inventario",
+}
+
+
+def _es_identificador(clave: str) -> bool:
+    return clave in CAMPOS_IDENTIFICADOR
+
+
+def _crear_label_bloque(parent, texto: str, *, identificador: bool = False) -> ttk.Frame:
+    label_frame = ttk.Frame(parent)
+
+    ttk.Label(
+        label_frame,
+        text=texto,
+        foreground=C["texto"] if identificador else C["label_claro"],
+        font=("Segoe UI", 9, "bold") if identificador else ("Segoe UI", 9),
+    ).pack(side="left")
+
+    if identificador:
+        ttk.Label(
+            label_frame,
+            text=" ★",
+            foreground=C["gris_sub"],
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side="left")
+
+    return label_frame
+
+
 def crear_bloque(app, container, lista: list, titulo: str,
                  campos: list, renumerar, datos: dict = None,
                  permitir_vacio: bool = False,
@@ -29,15 +60,61 @@ def crear_bloque(app, container, lista: list, titulo: str,
         for k, _ in campos
     }
 
-    entries = {
-        k: app._campo(frame, lbl, vars_[k], i, width=34, readonly=True)
-        for i, (k, lbl) in enumerate(campos)
-    }
+    entries = {}
+
+    for fila, (clave, label) in enumerate(campos):
+        es_id = _es_identificador(clave)
+
+        label_frame = _crear_label_bloque(
+            frame,
+            label,
+            identificador=es_id,
+        )
+        label_frame.grid(
+            row=fila,
+            column=0,
+            sticky="w",
+            padx=(10, 6),
+            pady=5,
+        )
+
+        entry = ttk.Entry(
+            frame,
+            textvariable=vars_[clave],
+            width=34,
+            state="readonly",
+        )
+        entry.grid(
+            row=fila,
+            column=1,
+            sticky="ew",
+            padx=(0, 10),
+            pady=5,
+        )
+
+        entries[clave] = entry
+
+    ayuda = ttk.Label(
+        frame,
+        text="★ Completa al menos uno de estos dos campos: N° serie o Código inventario.",
+        foreground=C["gris_sub"],
+        font=("Segoe UI", 8, "italic"),
+        background=C["gris_panel"],
+    )
+    ayuda.grid(
+        row=len(campos),
+        column=0,
+        columnspan=2,
+        sticky="w",
+        padx=(10, 10),
+        pady=(0, 6),
+    )
+
     btns = ttk.Frame(frame)
     btns.grid(
         row=0,
         column=2,
-        rowspan=len(campos),
+        rowspan=max(1, len(campos) + 1),
         padx=(8, 8),
         pady=6,
         sticky="ne",
@@ -64,7 +141,12 @@ def crear_bloque(app, container, lista: list, titulo: str,
     ).pack(fill="x")
 
     frame.columnconfigure(1, weight=1)
-    lista.append({"frame": outer, "entries": entries, **vars_})
+
+    lista.append({
+        "frame": outer,
+        "entries": entries,
+        **vars_,
+    })
 
     if iniciar_editable:
         app.root.after_idle(lambda e=entries: app._habilitar_grupo(e))
@@ -100,7 +182,8 @@ def crear_bloque_monitor(app, datos: dict = None) -> None:
         on_empty=app._mostrar_estado_monitores_vacio,
         iniciar_editable=es_manual,
     )
-    
+
+
 def crear_bloque_impresora(app, datos: dict = None) -> None:
     es_manual = datos is None
 

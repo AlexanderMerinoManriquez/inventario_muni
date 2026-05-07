@@ -15,27 +15,33 @@ def seccion(parent, titulo, *, fill="x", expand=False, pady=(0, 14)) -> ttk.Labe
     return frame
 
 
-def campo(parent, texto: str, variable: tk.StringVar, fila: int,
-          width: int = 30, readonly: bool = False,
-          obligatorio: bool = False) -> ttk.Entry:
-
+def _crear_label_campo(parent, texto: str, *, obligatorio: bool = False) -> ttk.Frame:
     label_frame = ttk.Frame(parent)
-    label_frame.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
     ttk.Label(
         label_frame,
         text=texto,
-        foreground=C["label_claro"],
-        font=("Segoe UI", 9),
+        foreground=C["texto"] if obligatorio else C["label_claro"],
+        font=("Segoe UI", 9, "bold") if obligatorio else ("Segoe UI", 9),
     ).pack(side="left")
 
     if obligatorio:
         ttk.Label(
             label_frame,
-            text="*",
+            text=" ★",
             foreground=C["rojo"],
             font=("Segoe UI", 9, "bold"),
-        ).pack(side="left", padx=(2, 0))
+        ).pack(side="left")
+
+    return label_frame
+
+
+def campo(parent, texto: str, variable: tk.StringVar, fila: int,
+          width: int = 30, readonly: bool = False,
+          obligatorio: bool = False) -> ttk.Entry:
+
+    label_frame = _crear_label_campo(parent, texto, obligatorio=obligatorio)
+    label_frame.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
     entry = ttk.Entry(
         parent,
@@ -72,6 +78,7 @@ def campo_ubicacion(app, parent, fila: int) -> ttk.Entry:
     ).grid(row=0, column=1)
 
     return entry
+
 
 class Tooltip:
     def __init__(self, widget, texto, delay=600):

@@ -136,6 +136,12 @@ def configurar_estilo() -> None:
         background=[("active", "#dbeafe")],
         foreground=[("active", "#1e40af")],
     )
+    
+    s.map(
+        "Edit.TButton",
+        background=[("active", "#dbeafe")],
+        foreground=[("active", "#1e40af")],
+    )
 
     s.configure(
         "Add.TButton",

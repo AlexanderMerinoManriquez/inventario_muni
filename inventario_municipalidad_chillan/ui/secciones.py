@@ -17,14 +17,14 @@ def _label_campo(parent, texto: str, *, obligatorio: bool = False):
     ttk.Label(
         cont,
         text=texto,
-        foreground=C["label_claro"],
-        font=LABEL_FONT,
+        foreground=C["texto"] if obligatorio else C["label_claro"],
+        font=LABEL_BOLD_FONT if obligatorio else LABEL_FONT,
     ).pack(side="left")
 
     if obligatorio:
         ttk.Label(
             cont,
-            text=" *",
+            text=" ★",
             foreground=C["rojo"],
             font=LABEL_BOLD_FONT,
         ).pack(side="left")
