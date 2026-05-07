@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import ttk
 
 from config import C
+from utils.discos_modelo import obtener_disco_principal
 from utils.formato import formatear_capacidad
 
 
 def build_auto_frame(app, parent) -> None:
     frame = app._seccion(
         parent,
-        "Datos detectados automáticamente",
+        "Equipo principal del funcionario",
         fill="both",
         expand=False,
     )
@@ -54,30 +55,7 @@ def build_auto_frame(app, parent) -> None:
     frame.columnconfigure(1, weight=1)
 
 
-def _capacidad_numero(disco: dict) -> float:
-    capacidad = str(disco.get("capacidad", "") or "")
-    capacidad = capacidad.upper().replace("GB", "").strip()
-
-    try:
-        return float(capacidad)
-    except ValueError:
-        return 0
-
-
-def _disco_principal(discos: list[dict]) -> dict | None:
-    if not discos:
-        return None
-
-    return sorted(
-        discos,
-        key=lambda d: (
-            str(d.get("tipo", "")).upper() != "SSD",
-            -_capacidad_numero(d),
-        ),
-    )[0]
-
-
-def _crear_label_identificador_auto(parent, texto: str):
+def _crear_label_identificador_auto(parent, texto: str) -> ttk.Frame:
     cont = ttk.Frame(parent)
 
     ttk.Label(
@@ -112,7 +90,7 @@ def mostrar_discos_en_auto_frame(app) -> None:
         serial_item["entry"].grid_forget()
 
     fila = app.fila_discos_inicio
-    disco = _disco_principal(app.discos_fisicos)
+    disco = obtener_disco_principal(app.discos_fisicos)
 
     if disco:
         tipo = str(disco.get("tipo", "") or "Disco").strip()

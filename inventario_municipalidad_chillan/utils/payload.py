@@ -1,6 +1,57 @@
 import re
 from datetime import datetime
 
+from utils.discos_modelo import extraer_capacidad_gb, separar_disco_principal
+
+
+SERIALES_INVALIDOS = {
+    "",
+    "0",
+    "00",
+    "000",
+    "0000",
+    "00000",
+    "000000",
+    "NONE",
+    "UNKNOWN",
+    "DESCONOCIDO",
+    "NO DETECTADO",
+    "SIN SERIAL",
+    "SIN SERIE",
+    "SIN_SERIE",
+    "N/A",
+    "NA",
+    "NULL",
+    "ERROR",
+    "DEFAULT STRING",
+    "DEFAULTSTRING",
+    "SYSTEM SERIAL NUMBER",
+    "SERIAL NUMBER",
+    "TO BE FILLED BY O.E.M.",
+    "TO BE FILLED BY OEM",
+    "TOBEFILLEDBYO.E.M.",
+    "TOBEFILLEDBYOEM",
+    "NOT APPLICABLE",
+    "NOTAPPLICABLE",
+}
+
+
+PATRONES_SERIAL_INVALIDO = (
+    "WSD",
+    "SWD\\",
+    "USBPRINT\\",
+    "PRINTENUM\\",
+    "ROOT\\",
+    "UMB\\",
+    "BTH\\",
+    "BTHENUM\\",
+    "DISPLAY\\",
+    "MONITOR\\",
+    "PCI\\",
+    "ACPI\\",
+    "LOCALPRINTQUEUE",
+)
+
 
 def limpiar_texto(valor) -> str | None:
     texto = str(valor or "").strip()
@@ -16,13 +67,51 @@ def normalizar_codigo_inventario(valor) -> str | None:
     return texto or None
 
 
-def normalizar_identificador(valor) -> str | None:
-    texto = str(valor or "").strip().upper()
+def _es_guid(valor: str) -> bool:
+    return bool(
+        re.fullmatch(
+            r"\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?",
+            str(valor or "").strip().upper(),
+        )
+    )
 
-    if texto in {"", "NO DETECTADO", "SIN SERIAL", "SIN_SERIE", "N/A", "NA"}:
+
+def normalizar_identificador(valor) -> str | None:
+    serial = str(valor or "").strip().upper().strip("{}")
+
+    if not serial:
         return None
 
-    return texto
+    serial_compacto = re.sub(r"[\s\-_\.]+", "", serial)
+
+    if serial in SERIALES_INVALIDOS or serial_compacto in SERIALES_INVALIDOS:
+        return None
+
+    if len(serial_compacto) < 3:
+        return None
+
+    if _es_guid(serial):
+        return None
+
+    if any(patron in serial for patron in PATRONES_SERIAL_INVALIDO):
+        return None
+
+    if "\\" in serial or "/" in serial:
+        return None
+
+    if "&" in serial:
+        return None
+
+    if re.fullmatch(r"0+", serial_compacto):
+        return None
+
+    if re.fullmatch(r"F+", serial_compacto):
+        return None
+
+    if re.fullmatch(r"X+", serial_compacto):
+        return None
+
+    return serial
 
 
 def extraer_numero_decimal(valor) -> float | None:
@@ -43,28 +132,6 @@ def normalizar_ram_gb(valor) -> float | None:
 
     valores_ram = [2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 256]
     return float(min(valores_ram, key=lambda x: abs(x - ram)))
-
-
-def _capacidad_numero(disco: dict) -> float:
-    return extraer_numero_decimal(disco.get("capacidad")) or 0
-
-
-def _ordenar_discos(discos: list[dict]) -> list[dict]:
-    return sorted(
-        discos,
-        key=lambda d: (
-            str(d.get("tipo", "")).upper() != "SSD",
-            -_capacidad_numero(d),
-        ),
-    )
-
-
-def _separar_disco_principal(discos: list[dict]) -> tuple[dict | None, list[dict]]:
-    if not discos:
-        return None, []
-
-    ordenados = _ordenar_discos(discos)
-    return ordenados[0], ordenados[1:]
 
 
 def _limpiar_items(vars_lista: list[dict], campos: tuple[str, ...]) -> list[dict]:
@@ -142,7 +209,7 @@ def construir_payload(app) -> dict:
         for clave, _ in app.AUTO_FIELDS
     }
 
-    disco_principal, _ = _separar_disco_principal(app.discos_fisicos)
+    disco_principal, _ = separar_disco_principal(app.discos_fisicos)
 
     monitores = _limpiar_items(
         app.monitores_vars,
@@ -186,7 +253,7 @@ def construir_payload(app) -> dict:
         "tipo_disco_principal": limpiar_texto(
             str((disco_principal or {}).get("tipo", "")).upper()
         ),
-        "capacidad_disco_principal_gb": extraer_numero_decimal(
+        "capacidad_disco_principal_gb": extraer_capacidad_gb(
             (disco_principal or {}).get("capacidad")
         ),
 

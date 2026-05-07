@@ -48,6 +48,27 @@ def configurar_estilo() -> None:
         bordercolor=[("focus", C["rojo"]), ("!focus", C["gris_borde"])],
         fieldbackground=[("readonly", C["gris_readonly"]),("!readonly", C["blanco"])],
     )
+    
+    s.configure(
+        "Error.TEntry",
+        fieldbackground="#fff1f2",
+        bordercolor=C["rojo"],
+        foreground=C["texto"],
+        padding=6,
+        relief="flat",
+    )
+
+    s.map(
+        "Error.TEntry",
+        bordercolor=[
+            ("focus", C["rojo"]),
+            ("!focus", C["rojo"]),
+        ],
+        fieldbackground=[
+            ("readonly", "#fff1f2"),
+            ("!readonly", "#fff1f2"),
+        ],
+    )
 
     s.configure(
         "Primary.TButton",
@@ -137,12 +158,6 @@ def configurar_estilo() -> None:
         foreground=[("active", "#1e40af")],
     )
     
-    s.map(
-        "Edit.TButton",
-        background=[("active", "#dbeafe")],
-        foreground=[("active", "#1e40af")],
-    )
-
     s.configure(
         "Add.TButton",
         font=("Segoe UI", 9, "bold"),

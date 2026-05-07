@@ -52,15 +52,6 @@ class BuscadorAutocomplete(tk.Frame):
  
         self.entry = ttk.Entry(barra, textvariable=self.var_buscar, **kwargs)
         self.entry.pack(side="left", fill="x", expand=True)
-        self._lbl_estado = tk.Label(
-            barra,
-            text="",
-            bg=C["gris_panel"],
-            font=("Segoe UI", 10, "bold"),
-            width=2,
-        )
-        self._lbl_estado.pack(side="left", padx=(4, 0))
- 
         # ── Lista desplegable ──────────────────────────────────────────────────
         self.lista = tk.Listbox(
             self,
@@ -114,11 +105,7 @@ class BuscadorAutocomplete(tk.Frame):
     # ── Estado visual ──────────────────────────────────────────────────────────
     def _marcar_seleccionado(self, ok: bool) -> None:
         self._seleccionado = ok
-        if ok:
-            self._lbl_estado.config(text="✓", fg=C.get("verde", "#4caf50"))
-        else:
-            self._lbl_estado.config(text="")
-    # ── yeahyeahyeah ──────────────────────────────────────────────────────────
+    # ── Control de trace ──────────────────────────────────────────────────────
     def _activar_trace(self) -> None:
         if self._trace_id is None:
             self._trace_id = self.var_buscar.trace_add(
@@ -230,7 +217,7 @@ class BuscadorAutocomplete(tk.Frame):
         self.lista.focus_set()
 
         return "break"
-    # ── mejora del click ─────────────────────────────────────────────────
+    # ── Selección con mouse ───────────────────────────────────────────────────
     def _seleccionar_click(self, event):
         if not self.resultados:
             return "break"

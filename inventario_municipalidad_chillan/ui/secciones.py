@@ -32,6 +32,22 @@ def _label_campo(parent, texto: str, *, obligatorio: bool = False):
     return cont
 
 
+def _mensaje_obligatorios(parent, fila: int, columna: int = 0, columnspan: int = 2) -> None:
+    ttk.Label(
+        parent,
+        text="★ Campos obligatorios: deben completarse antes de registrar el inventario.",
+        foreground=C["rojo"],
+        font=("Segoe UI", 8, "italic"),
+    ).grid(
+        row=fila,
+        column=columna,
+        columnspan=columnspan,
+        sticky="w",
+        padx=(10, 10),
+        pady=(0, 6),
+    )
+
+
 def _boton_editar(parent, texto_tooltip: str, command):
     btn = ttk.Button(
         parent,
@@ -42,26 +58,9 @@ def _boton_editar(parent, texto_tooltip: str, command):
     Tooltip(btn, texto_tooltip)
     return btn
 
-def _crear_frame_activos(app, parent, titulo: str, texto_boton: str, command, tooltip: str):
-    frame = app._seccion(parent, titulo)
-
-    btn = ttk.Button(
-        frame,
-        text=texto_boton,
-        style="Add.TButton",
-        command=command,
-    )
-    btn.pack(anchor="w", padx=10, pady=(4, 6))
-    Tooltip(btn, tooltip)
-
-    container = ttk.Frame(frame)
-    container.pack(fill="x", padx=10, pady=(0, 6))
-
-    return container
-
 
 def build_monitores_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Monitores asociados")
+    frame = app._seccion(parent, "Monitores del funcionario")
 
     btn = ttk.Button(
         frame,
@@ -87,7 +86,7 @@ def build_monitores_frame(app, parent) -> None:
 
 
 def build_impresoras_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Impresoras asociadas")
+    frame = app._seccion(parent, "Impresoras del funcionario")
 
     btn = ttk.Button(
         frame,
@@ -113,7 +112,7 @@ def build_impresoras_frame(app, parent) -> None:
 
 
 def build_observaciones_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Observaciones", fill="both", expand=True)
+    frame = app._seccion(parent, "Observaciones del inventario", fill="both", expand=True)
 
     ttk.Label(
         frame,
@@ -176,8 +175,24 @@ def build_acciones_frame(app, parent) -> None:
 
 
 def build_manual_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Datos del equipo y funcionario")
+    frame = app._seccion(parent, "Funcionario y departamento asignado")
     frame.columnconfigure(1, weight=1)
+
+    btn_editar_func = _boton_editar(
+        frame,
+        "Editar RUT y departamento del funcionario",
+        lambda: app._habilitar_grupo_generico([
+            app.entry_rut_funcionario,
+            app.entry_departamento_manual,
+        ]),
+    )
+    btn_editar_func.grid(
+        row=0,
+        column=2,
+        sticky="ne",
+        padx=(0, 8),
+        pady=5,
+    )
 
     _label_campo(
         frame,
@@ -218,25 +233,27 @@ def build_manual_frame(app, parent) -> None:
         obligatorio=True,
     )
 
-    btn_editar_func = _boton_editar(
+    _mensaje_obligatorios(frame, fila=3, columnspan=2)
+
+
+def build_trazabilidad_frame(app, parent) -> None:
+    frame = app._seccion(parent, "Datos del registrador")
+    frame.columnconfigure(1, weight=1)
+
+    btn_editar_reg = _boton_editar(
         frame,
-        "Editar RUT y departamento del funcionario",
+        "Editar nombre del registrador",
         lambda: app._habilitar_grupo_generico([
-            app.entry_rut_funcionario,
-            app.entry_departamento_manual,
+            app.entry_nombre_registrador,
         ]),
     )
-    btn_editar_func.grid(
-        row=1,
+    btn_editar_reg.grid(
+        row=0,
         column=2,
-        rowspan=2,
-        sticky="n",
+        sticky="ne",
         padx=(0, 8),
         pady=5,
     )
-def build_trazabilidad_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Trazabilidad del registro")
-    frame.columnconfigure(1, weight=1)
 
     ttk.Label(
         frame,
@@ -292,19 +309,6 @@ def build_trazabilidad_frame(app, parent) -> None:
         obligatorio=True,
     )
 
-    btn_editar_reg = _boton_editar(
-        frame,
-        "Editar nombre del registrador",
-        lambda: app._habilitar_grupo_generico([
-            app.entry_nombre_registrador,
-        ]),
-    )
-    btn_editar_reg.grid(
-        row=2,
-        column=2,
-        sticky="n",
-        padx=(0, 8),
-        pady=5,
-    )
+    _mensaje_obligatorios(frame, fila=3, columnspan=2)
 
     app._actualizar_reloj()
