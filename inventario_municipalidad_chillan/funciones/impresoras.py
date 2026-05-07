@@ -34,9 +34,13 @@ SERIALES_INVALIDOS = {
     "USB001",
     "USB002",
     "USB003",
+    "USB004",
+    "LPT1",
+    "LPT2",
+    "PORT",
 }
 
-PALABRAS_IGNORADAS_PNP = {
+TOKENS_IGNORADOS = {
     "printer",
     "impresora",
     "series",
@@ -46,6 +50,9 @@ PALABRAS_IGNORADAS_PNP = {
     "v4",
     "usb",
     "pro",
+    "laserjet",
+    "deskjet",
+    "officejet",
 }
 
 
@@ -88,6 +95,7 @@ def _normalizar_serial(valor: str) -> str:
         "BTH\\",
         "BTHENUM\\",
         "MS_BTH",
+        "LOCALPRINTQUEUE",
     )
 
     if any(p in serial for p in patrones_invalidos):
@@ -97,6 +105,12 @@ def _normalizar_serial(valor: str) -> str:
         return ""
 
     if "&" in serial:
+        return ""
+
+    if re.fullmatch(r"0+", serial):
+        return ""
+
+    if re.fullmatch(r"F+", serial):
         return ""
 
     return serial
@@ -229,6 +243,40 @@ def _extraer_serial_desde_ruta(valor: str) -> str:
     return _normalizar_serial(candidato)
 
 
+def _seriales_desde_lista(valores) -> list[str]:
+    if not valores:
+        return []
+
+    if isinstance(valores, str):
+        valores = [valores]
+
+    seriales = []
+
+    for valor in valores:
+        serial = _extraer_serial_desde_ruta(valor)
+
+        if serial and serial not in seriales:
+            seriales.append(serial)
+
+    return seriales
+
+
+def _crear_regex_busqueda(nombre: str, driver: str) -> str:
+    tokens = []
+
+    for token in re.split(r"[^A-Za-z0-9]+", f"{nombre} {driver}"):
+        t = token.strip()
+        tl = t.lower()
+
+        if len(t) >= 3 and tl not in TOKENS_IGNORADOS:
+            tokens.append(re.escape(t))
+
+    if tokens:
+        return "|".join(dict.fromkeys(tokens))
+
+    return "hp|epson|canon|brother|xerox|ricoh|kyocera|samsung|laserjet|deskjet|officejet"
+
+
 def _buscar_serial_impresora(
     nombre: str,
     driver: str,
@@ -246,6 +294,7 @@ def _buscar_serial_impresora(
         pnp_device_id = _normalizar_texto(disp.get("PNPDeviceID"))
         parent_device_id = _normalizar_texto(disp.get("ParentDeviceID"))
         bus_parent = _normalizar_texto(disp.get("BusParent"))
+        seriales_usb = disp.get("SerialesUSB") or []
 
         nombre_pnp_key = _normalizar_clave(nombre_pnp)
 
@@ -260,6 +309,12 @@ def _buscar_serial_impresora(
         if not coincide:
             continue
 
+        # Prioridad 1: serial físico USB desde registro de Windows.
+        for serial in _seriales_desde_lista(seriales_usb):
+            if serial:
+                return serial
+
+        # Prioridad 2: respaldo desde propiedades/rutas PnP.
         for candidato in (
             parent_device_id,
             bus_parent,
@@ -274,7 +329,13 @@ def _buscar_serial_impresora(
     return ""
 
 
-def obtener_impresoras_activas() -> list[dict]:
+def _obtener_pnp_rapido() -> tuple[list[dict], list[dict]]:
+    """
+    Primera etapa rápida:
+    - obtiene impresoras reales
+    - busca serial físico USB desde el registro
+    - no usa Get-PnpDeviceProperty
+    """
     script = r"""
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -293,7 +354,7 @@ if ($printers.Count -eq 0) {
     [PSCustomObject]@{
         Printers = @()
         PnP = @()
-    } | ConvertTo-Json -Depth 6 -Compress
+    } | ConvertTo-Json -Depth 7 -Compress
     exit
 }
 
@@ -301,17 +362,34 @@ $tokens = New-Object System.Collections.Generic.List[string]
 
 foreach ($p in $printers) {
     $texto = "$($p.Name) $($p.DriverName)"
+
     foreach ($t in ($texto -split '[^A-Za-z0-9]+')) {
-        if ($t.Length -ge 3 -and $t.ToLower() -notin @(
-            'printer','impresora','series','serie','driver','pcl','usb','pro'
-        )) {
+        $tl = $t.ToLower()
+
+        if (
+            $t.Length -ge 3 -and
+            $tl -notin @(
+                'printer',
+                'impresora',
+                'series',
+                'serie',
+                'driver',
+                'pcl',
+                'v4',
+                'usb',
+                'pro',
+                'laserjet',
+                'deskjet',
+                'officejet'
+            )
+        ) {
             $tokens.Add([regex]::Escape($t))
         }
     }
 }
 
 if ($tokens.Count -eq 0) {
-    $regex = 'printer|laserjet|deskjet|officejet|epson|canon|brother|xerox|ricoh|kyocera|samsung|hp'
+    $regex = 'hp|epson|canon|brother|xerox|ricoh|kyocera|samsung|laserjet|deskjet|officejet'
 } else {
     $regex = ($tokens | Select-Object -Unique) -join '|'
 }
@@ -321,33 +399,49 @@ $pnpBase = @(Get-CimInstance Win32_PnPEntity |
         ($_.Name -match $regex) -or
         ($_.DeviceID -match $regex) -or
         ($_.PNPDeviceID -match $regex) -or
-        ($_.PNPClass -in @('Printer', 'PrintQueue') -and $_.Name -match $regex)
+        ($_.PNPClass -in @('Printer', 'PrintQueue', 'USBDevice', 'USB') -and $_.Name -match $regex) -or
+        ($_.Service -in @('usbprint', 'WINUSB') -and $_.Name -match $regex)
     })
 
 $pnp = foreach ($d in $pnpBase) {
-    $parent = ""
-    $busParent = ""
+    $serialesUsb = New-Object System.Collections.Generic.List[string]
 
-    try {
-        $propParent = Get-PnpDeviceProperty -InstanceId $d.PNPDeviceID -KeyName 'DEVPKEY_Device_Parent' -ErrorAction SilentlyContinue
-        if ($propParent -and $propParent.Data) {
-            $parent = [string]$propParent.Data
-        }
-    } catch {}
+    $rutas = @(
+        [string]$d.DeviceID,
+        [string]$d.PNPDeviceID
+    )
 
-    try {
-        $propBus = Get-PnpDeviceProperty -InstanceId $d.PNPDeviceID -KeyName '{83DA6326-97A6-4088-9453-A1923F573B29} 10' -ErrorAction SilentlyContinue
-        if ($propBus -and $propBus.Data) {
-            $busParent = [string]$propBus.Data
+    foreach ($ruta in $rutas) {
+        if ($ruta -match 'USB\\(VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4})(?:&MI_[0-9A-Fa-f]{2})?\\') {
+            $base = $Matches[1].ToUpper()
+            $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\USB\$base"
+
+            if (Test-Path $regPath) {
+                try {
+                    Get-ChildItem $regPath -ErrorAction SilentlyContinue | ForEach-Object {
+                        $leaf = Split-Path $_.Name -Leaf
+
+                        if (
+                            $leaf -and
+                            $leaf -notmatch '&' -and
+                            $leaf -notmatch '^[0-9A-Fa-f-]{36}$' -and
+                            $leaf.ToUpper() -notin @('USB001','USB002','USB003','USB004','LPT1','LPT2')
+                        ) {
+                            $serialesUsb.Add("USB\$base\$leaf")
+                        }
+                    }
+                } catch {}
+            }
         }
-    } catch {}
+    }
 
     [PSCustomObject]@{
         Name = $d.Name
         DeviceID = $d.DeviceID
         PNPDeviceID = $d.PNPDeviceID
-        ParentDeviceID = $parent
-        BusParent = $busParent
+        SerialesUSB = @($serialesUsb)
+        ParentDeviceID = ""
+        BusParent = ""
         Manufacturer = $d.Manufacturer
         Service = $d.Service
         PNPClass = $d.PNPClass
@@ -357,7 +451,7 @@ $pnp = foreach ($d in $pnpBase) {
 [PSCustomObject]@{
     Printers = @($printers)
     PnP = @($pnp)
-} | ConvertTo-Json -Depth 6 -Compress
+} | ConvertTo-Json -Depth 7 -Compress
 """
 
     try:
@@ -374,11 +468,11 @@ $pnp = foreach ($d in $pnpBase) {
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=20,
+            timeout=15,
         )
 
         if proc.returncode != 0 or not proc.stdout.strip():
-            return []
+            return [], []
 
         data = json.loads(proc.stdout.strip())
 
@@ -391,49 +485,152 @@ $pnp = foreach ($d in $pnpBase) {
         if isinstance(pnp_data, dict):
             pnp_data = [pnp_data]
 
-        resultado = []
+        return impresoras_data, pnp_data
 
-        for item in impresoras_data:
-            nombre = _normalizar_texto(item.get("Name"))
-            driver = _normalizar_texto(item.get("DriverName"))
-            puerto = _normalizar_texto(item.get("PortName"))
-            offline = bool(item.get("WorkOffline"))
+    except Exception:
+        return [], []
 
-            if offline or not _es_impresora_real(nombre):
-                continue
 
-            marca = _inferir_marca(nombre, driver)
-            modelo = _inferir_modelo(nombre, driver, marca).lower()
-            ip = _extraer_ip(puerto)
-            serial = _buscar_serial_impresora(nombre, driver, pnp_data)
+def _obtener_pnp_respaldo(nombre: str, driver: str) -> list[dict]:
+    """
+    Segunda etapa pesada:
+    solo se llama cuando la etapa rápida no encontró serial.
+    Usa Get-PnpDeviceProperty para ParentDeviceID / BusParent.
+    """
+    regex = _crear_regex_busqueda(nombre, driver)
+    regex_ps = json.dumps(regex)
 
-            resultado.append({
-                "tipo": _inferir_tipo(nombre, driver),
-                "marca": marca.lower(),
-                "modelo": modelo,
-                "ip": ip,
-                "toner_tinta": _sugerir_consumible(nombre, driver, modelo),
-                "numero_de_serie": serial,
-            })
+    script = rf"""
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
-        unicas = []
-        vistos = set()
+$regex = {regex_ps}
 
-        for imp in resultado:
-            clave = (
-                imp.get("modelo", ""),
-                imp.get("ip", ""),
-                imp.get("tipo", ""),
-                imp.get("numero_de_serie", ""),
-            )
+$pnpBase = @(Get-CimInstance Win32_PnPEntity |
+    Where-Object {{
+        ($_.Name -match $regex) -or
+        ($_.DeviceID -match $regex) -or
+        ($_.PNPDeviceID -match $regex) -or
+        ($_.PNPClass -in @('Printer', 'PrintQueue', 'USBDevice', 'USB') -and $_.Name -match $regex) -or
+        ($_.Service -in @('usbprint', 'WINUSB') -and $_.Name -match $regex)
+    }})
 
-            if clave in vistos:
-                continue
+$pnp = foreach ($d in $pnpBase) {{
+    $parent = ""
+    $busParent = ""
 
-            vistos.add(clave)
-            unicas.append(imp)
+    try {{
+        $propParent = Get-PnpDeviceProperty -InstanceId $d.PNPDeviceID -KeyName 'DEVPKEY_Device_Parent' -ErrorAction SilentlyContinue
+        if ($propParent -and $propParent.Data) {{
+            $parent = [string]$propParent.Data
+        }}
+    }} catch {{}}
 
-        return unicas
+    try {{
+        $propBus = Get-PnpDeviceProperty -InstanceId $d.PNPDeviceID -KeyName '{{83DA6326-97A6-4088-9453-A1923F573B29}} 10' -ErrorAction SilentlyContinue
+        if ($propBus -and $propBus.Data) {{
+            $busParent = [string]$propBus.Data
+        }}
+    }} catch {{}}
+
+    [PSCustomObject]@{{
+        Name = $d.Name
+        DeviceID = $d.DeviceID
+        PNPDeviceID = $d.PNPDeviceID
+        SerialesUSB = @()
+        ParentDeviceID = $parent
+        BusParent = $busParent
+        Manufacturer = $d.Manufacturer
+        Service = $d.Service
+        PNPClass = $d.PNPClass
+    }}
+}}
+
+@($pnp) | ConvertTo-Json -Depth 6 -Compress
+"""
+
+    try:
+        proc = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                script,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=8,
+        )
+
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return []
+
+        data = json.loads(proc.stdout.strip())
+
+        if isinstance(data, dict):
+            data = [data]
+
+        return data
 
     except Exception:
         return []
+
+
+def obtener_impresoras_activas() -> list[dict]:
+    impresoras_data, pnp_data = _obtener_pnp_rapido()
+
+    if not impresoras_data:
+        return []
+
+    resultado = []
+
+    for item in impresoras_data:
+        nombre = _normalizar_texto(item.get("Name"))
+        driver = _normalizar_texto(item.get("DriverName"))
+        puerto = _normalizar_texto(item.get("PortName"))
+        offline = bool(item.get("WorkOffline"))
+
+        if offline or not _es_impresora_real(nombre):
+            continue
+
+        marca = _inferir_marca(nombre, driver)
+        modelo = _inferir_modelo(nombre, driver, marca).lower()
+        ip = _extraer_ip(puerto)
+
+        serial = _buscar_serial_impresora(nombre, driver, pnp_data)
+
+        if not serial:
+            pnp_respaldo = _obtener_pnp_respaldo(nombre, driver)
+            serial = _buscar_serial_impresora(nombre, driver, pnp_respaldo)
+
+        resultado.append({
+            "tipo": _inferir_tipo(nombre, driver),
+            "marca": marca.lower(),
+            "modelo": modelo,
+            "ip": ip,
+            "toner_tinta": _sugerir_consumible(nombre, driver, modelo),
+            "numero_de_serie": serial,
+        })
+
+    unicas = []
+    vistos = set()
+
+    for imp in resultado:
+        clave = (
+            imp.get("modelo", ""),
+            imp.get("ip", ""),
+            imp.get("tipo", ""),
+            imp.get("numero_de_serie", ""),
+        )
+
+        if clave in vistos:
+            continue
+
+        vistos.add(clave)
+        unicas.append(imp)
+
+    return unicas
