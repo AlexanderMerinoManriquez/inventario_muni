@@ -36,6 +36,18 @@ SERIALES_INVALIDOS = {
     "USB003",
 }
 
+PALABRAS_IGNORADAS_PNP = {
+    "printer",
+    "impresora",
+    "series",
+    "serie",
+    "driver",
+    "pcl",
+    "v4",
+    "usb",
+    "pro",
+}
+
 
 def _normalizar_texto(valor: str) -> str:
     return str(valor or "").strip()
@@ -63,7 +75,6 @@ def _normalizar_serial(valor: str) -> str:
     if len(serial) < 5:
         return ""
 
-    # Rechaza GUID/UUID de Windows, WSD o PnP.
     if _es_guid(serial):
         return ""
 
@@ -82,11 +93,9 @@ def _normalizar_serial(valor: str) -> str:
     if any(p in serial for p in patrones_invalidos):
         return ""
 
-    # Si contiene separadores de ruta, no debe llegar completo como serial.
     if "\\" in serial or "/" in serial:
         return ""
 
-    # Si contiene &, normalmente es parte de una ruta interna de Windows.
     if "&" in serial:
         return ""
 
@@ -208,18 +217,6 @@ def _sugerir_consumible(nombre: str, driver: str, modelo: str = "") -> str:
 
 
 def _extraer_serial_desde_ruta(valor: str) -> str:
-    """
-    Extrae un posible serial desde rutas PnP/USB.
-
-    Ejemplo válido:
-    USB\\VID_03F0&PID_0274\\BRBSTB80DJ
-    → BRBSTB80DJ
-
-    Ejemplos inválidos:
-    SWD\\PRINTENUM\\{C4583CAA-53E3-4B23-8319-DE7BA2CDF018}
-    USBPRINT\\HPHP_LASERJET_PRO_4003\\8&315C8AC&0&USB001
-    USB\\VID_03F0&PID_0274&MI_03\\7&38FDD011&1&C003
-    """
     texto = _normalizar_texto(valor)
 
     if not texto or "\\" not in texto:
@@ -252,9 +249,6 @@ def _buscar_serial_impresora(
 
         nombre_pnp_key = _normalizar_clave(nombre_pnp)
 
-        if not nombre_pnp_key:
-            continue
-
         coincide = (
             nombre_key and nombre_key in nombre_pnp_key
         ) or (
@@ -266,7 +260,6 @@ def _buscar_serial_impresora(
         if not coincide:
             continue
 
-        # Prioridad 1: ParentDeviceID, porque ahí Windows suele exponer el serial USB real.
         for candidato in (
             parent_device_id,
             bus_parent,
@@ -286,16 +279,50 @@ def obtener_impresoras_activas() -> list[dict]:
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-$printers = Get-CimInstance Win32_Printer |
-    Select-Object Name, DriverName, PortName, WorkOffline, Default, PrinterStatus
+$excluir = 'microsoft print to pdf|microsoft xps document writer|onenote|fax|pdf|xps|snagit|cutepdf|send to onenote'
 
-$pnpBase = Get-CimInstance Win32_PnPEntity |
+$printers = @(Get-CimInstance Win32_Printer |
+    Select-Object Name, DriverName, PortName, WorkOffline, Default, PrinterStatus |
     Where-Object {
-        $_.PNPClass -in @('Printer', 'PrintQueue', 'USBDevice', 'USB') -or
-        $_.Service -eq 'usbprint' -or
-        $_.Service -eq 'WINUSB' -or
-        $_.Name -match 'printer|laserjet|deskjet|officejet|epson|canon|brother|xerox|ricoh|kyocera|samsung|hp'
+        $_.Name -and
+        $_.WorkOffline -ne $true -and
+        $_.Name.ToLower() -notmatch $excluir
+    })
+
+if ($printers.Count -eq 0) {
+    [PSCustomObject]@{
+        Printers = @()
+        PnP = @()
+    } | ConvertTo-Json -Depth 6 -Compress
+    exit
+}
+
+$tokens = New-Object System.Collections.Generic.List[string]
+
+foreach ($p in $printers) {
+    $texto = "$($p.Name) $($p.DriverName)"
+    foreach ($t in ($texto -split '[^A-Za-z0-9]+')) {
+        if ($t.Length -ge 3 -and $t.ToLower() -notin @(
+            'printer','impresora','series','serie','driver','pcl','usb','pro'
+        )) {
+            $tokens.Add([regex]::Escape($t))
+        }
     }
+}
+
+if ($tokens.Count -eq 0) {
+    $regex = 'printer|laserjet|deskjet|officejet|epson|canon|brother|xerox|ricoh|kyocera|samsung|hp'
+} else {
+    $regex = ($tokens | Select-Object -Unique) -join '|'
+}
+
+$pnpBase = @(Get-CimInstance Win32_PnPEntity |
+    Where-Object {
+        ($_.Name -match $regex) -or
+        ($_.DeviceID -match $regex) -or
+        ($_.PNPDeviceID -match $regex) -or
+        ($_.PNPClass -in @('Printer', 'PrintQueue') -and $_.Name -match $regex)
+    })
 
 $pnp = foreach ($d in $pnpBase) {
     $parent = ""
@@ -347,7 +374,7 @@ $pnp = foreach ($d in $pnpBase) {
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=30,
+            timeout=20,
         )
 
         if proc.returncode != 0 or not proc.stdout.strip():

@@ -1,5 +1,6 @@
 import json
 import math
+import re
 import subprocess
 
 
@@ -41,6 +42,10 @@ SERIALES_INVALIDOS = {
     "SIN_SERIE",
     "N/A",
     "NA",
+    "DEFAULT STRING",
+    "SYSTEM SERIAL NUMBER",
+    "TO BE FILLED BY O.E.M.",
+    "TO BE FILLED BY OEM",
 }
 
 
@@ -69,11 +74,11 @@ VIDEO_OUTPUT = {
 
 
 VIDEO_OUTPUT_INTEGRADO = {
-    6,            # LVDS
-    11,           # DisplayPort integrado / eDP
-    13,           # UDI integrado
-    2147483648,   # Internal
-    -2147483648,  # Internal como entero con signo
+    6,
+    11,
+    13,
+    2147483648,
+    -2147483648,
 }
 
 
@@ -95,13 +100,56 @@ def _limpiar_wmi(valor):
         return ""
 
 
-def _normalizar_serial(valor: str) -> str:
-    serial = str(valor or "").strip().upper()
+def _es_guid(valor: str) -> bool:
+    return bool(
+        re.fullmatch(
+            r"\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?",
+            str(valor or "").strip().upper(),
+        )
+    )
 
-    if serial in SERIALES_INVALIDOS:
+
+def _normalizar_serial(valor: str) -> str:
+    serial = str(valor or "").strip().upper().strip("{}")
+
+    if not serial:
         return ""
 
-    if len(serial) < 3:
+    serial_compacto = re.sub(r"[\s\-_\.]+", "", serial)
+
+    if serial in SERIALES_INVALIDOS or serial_compacto in SERIALES_INVALIDOS:
+        return ""
+
+    if len(serial_compacto) < 3:
+        return ""
+
+    if _es_guid(serial):
+        return ""
+
+    patrones_invalidos = (
+        "DISPLAY\\",
+        "MONITOR\\",
+        "ROOT\\",
+        "SWD\\",
+        "WSD",
+        "UID",
+        "PCI\\",
+        "ACPI\\",
+    )
+
+    if any(p in serial for p in patrones_invalidos):
+        return ""
+
+    if "\\" in serial or "/" in serial:
+        return ""
+
+    if "&" in serial:
+        return ""
+
+    if re.fullmatch(r"0+", serial_compacto):
+        return ""
+
+    if re.fullmatch(r"F+", serial_compacto):
         return ""
 
     return serial
@@ -190,6 +238,19 @@ def _es_pantalla_integrada(valor) -> bool:
     return codigo in VIDEO_OUTPUT_INTEGRADO
 
 
+def _extraer_serial_desde_ruta(valor: str) -> str:
+    texto = str(valor or "").strip()
+
+    if not texto or "\\" not in texto:
+        return _normalizar_serial(texto)
+
+    candidato = texto.split("\\")[-1].strip()
+    candidato = candidato.strip("{}")
+    candidato = re.sub(r"[^A-Za-z0-9\-_.]", "", candidato)
+
+    return _normalizar_serial(candidato)
+
+
 def obtener_monitores():
     script = r"""
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -206,18 +267,47 @@ foreach ($m in $ids) {
     $p = $params | Where-Object { $_.InstanceName -eq $m.InstanceName } | Select-Object -First 1
     $c = $conexiones | Where-Object { $_.InstanceName -eq $m.InstanceName } | Select-Object -First 1
 
+    $instanceBase = $m.InstanceName -replace '_\d+$',''
+    $parent = ""
+    $busParent = ""
+
+    try {
+        $props = @(Get-PnpDeviceProperty -InstanceId $instanceBase -ErrorAction SilentlyContinue)
+
+        if ($props) {
+            $propParent = $props |
+                Where-Object { $_.KeyName -eq 'DEVPKEY_Device_Parent' } |
+                Select-Object -First 1
+
+            if ($propParent -and $propParent.Data) {
+                $parent = [string]$propParent.Data
+            }
+
+            $propBus = $props |
+                Where-Object { $_.KeyName -eq '{83DA6326-97A6-4088-9453-A1923F573B29} 10' } |
+                Select-Object -First 1
+
+            if ($propBus -and $propBus.Data) {
+                $busParent = [string]$propBus.Data
+            }
+        }
+    } catch {}
+
     $resultado += [PSCustomObject]@{
         InstanceName = $m.InstanceName
+        InstanceBase = $instanceBase
         ManufacturerName = @($m.ManufacturerName)
         UserFriendlyName = @($m.UserFriendlyName)
         SerialNumberID = @($m.SerialNumberID)
+        ParentDeviceID = $parent
+        BusParent = $busParent
         MaxHorizontalImageSize = if ($p) { $p.MaxHorizontalImageSize } else { 0 }
         MaxVerticalImageSize   = if ($p) { $p.MaxVerticalImageSize } else { 0 }
         VideoOutputTechnology  = if ($c) { $c.VideoOutputTechnology } else { $null }
     }
 }
 
-$resultado | ConvertTo-Json -Depth 4 -Compress
+$resultado | ConvertTo-Json -Depth 5 -Compress
 """
 
     try:
@@ -234,7 +324,7 @@ $resultado | ConvertTo-Json -Depth 4 -Compress
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=25,
+            timeout=15,
         )
 
         if proc.returncode != 0:
@@ -258,6 +348,12 @@ $resultado | ConvertTo-Json -Depth 4 -Compress
             serial_raw = _limpiar_wmi(item.get("SerialNumberID"))
             video_output = item.get("VideoOutputTechnology")
 
+            serial = (
+                _normalizar_serial(serial_raw)
+                or _extraer_serial_desde_ruta(item.get("ParentDeviceID"))
+                or _extraer_serial_desde_ruta(item.get("BusParent"))
+            )
+
             monitores.append({
                 "instancia": item.get("InstanceName", ""),
                 "marca": _normalizar_marca(codigo),
@@ -266,7 +362,7 @@ $resultado | ConvertTo-Json -Depth 4 -Compress
                     item.get("MaxHorizontalImageSize", 0),
                     item.get("MaxVerticalImageSize", 0),
                 ),
-                "numero_de_serie": _normalizar_serial(serial_raw),
+                "numero_de_serie": serial,
                 "conexion": _nombre_conexion(video_output),
                 "es_pantalla_integrada": _es_pantalla_integrada(video_output),
             })

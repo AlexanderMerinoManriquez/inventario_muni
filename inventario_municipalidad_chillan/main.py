@@ -372,8 +372,7 @@ class InventarioApp:
             modelo = str(monitor.get("modelo") or "").strip()
             pulgadas = str(monitor.get("pulgadas") or "").strip()
             serial = str(monitor.get("numero_de_serie") or "").strip()
-            conexion = str(monitor.get("conexion") or "").strip()
-
+            
             partes = []
 
             if marca:
@@ -387,10 +386,7 @@ class InventarioApp:
 
             if serial:
                 partes.append(f"N° serie {serial}")
-
-            if conexion:
-                partes.append(f"conexión {conexion}")
-
+                
             detalle = ", ".join(partes)
 
             if detalle:
