@@ -1,6 +1,8 @@
 import csv
 import json
 
+from utils.rut import formatear_rut
+
 def cargar_funcionarios(path="data/funcionarios.csv"):
     personas = []
 
@@ -10,7 +12,7 @@ def cargar_funcionarios(path="data/funcionarios.csv"):
 
             for row in reader:
                 personas.append({
-                    "rut": row.get("rut", "").strip(),
+                    "rut": formatear_rut(row.get("rut", "")) or "",
                     "nombre": row.get("nombre", "").strip(),
                     "departamento": row.get("departamento", "").strip(),
                 })
@@ -30,7 +32,7 @@ def cargar_usuarios_sistema(path="data/usuarios_sistema.csv"):
 
             for row in reader:
                 personas.append({
-                    "rut": row.get("rut", "").strip(),
+                    "rut": formatear_rut(row.get("rut", "")) or "",
                     "nombre": row.get("nombre", "").strip(),
                 })
 

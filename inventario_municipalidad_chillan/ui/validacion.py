@@ -1,3 +1,5 @@
+from utils.rut import validar_rut
+
 def activar_limpieza_error_al_escribir(app, entry) -> None:
     if not entry or getattr(entry, "_limpia_error_bind", False):
         return
@@ -49,14 +51,14 @@ def marcar_validacion_visual(app, payload: dict) -> None:
     if not payload.get("nombre_funcionario"):
         set_entry_error(app, app.buscador_funcionario.entry)
 
-    if not payload.get("rut_funcionario"):
+    if not payload.get("rut_funcionario") or not validar_rut(payload.get("rut_funcionario")):
         set_entry_error(app, app.entry_rut_funcionario)
 
     if not payload.get("departamento_funcionario"):
         set_entry_error(app, app.buscador_departamento.entry)
 
-    if not payload.get("rut_registrador"):
-        set_entry_error(app, app.buscador_registrador.entry)
+    if not payload.get("rut_registrador") or not validar_rut(payload.get("rut_registrador")):
+        set_entry_error(app, app.buscador_registrador.entry)    
 
     if not payload.get("nombre_registrador"):
         set_entry_error(app, app.entry_nombre_registrador)

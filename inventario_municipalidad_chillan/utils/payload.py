@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 
 from utils.discos_modelo import extraer_capacidad_gb, separar_disco_principal
+from utils.rut import formatear_rut, validar_rut
 
 
 SERIALES_INVALIDOS = {
@@ -261,11 +262,11 @@ def construir_payload(app) -> dict:
         "anydesk": auto.get("anydesk"),
 
         "nombre_funcionario": limpiar_var(app.var_usuario),
-        "rut_funcionario": limpiar_var(app.var_rut_funcionario),
+        "rut_funcionario": formatear_rut(limpiar_var(app.var_rut_funcionario)),
         "departamento_funcionario": limpiar_var(app.var_departamento_funcionario),
 
         "nombre_registrador": limpiar_var(app.var_nombre_registrador),
-        "rut_registrador": limpiar_var(app.var_rut_registrador),
+        "rut_registrador": formatear_rut(limpiar_var(app.var_rut_registrador)),
 
         "fecha_hora_registro": (
             app.fecha_hora_envio
@@ -285,10 +286,10 @@ def validar_payload(payload: dict) -> tuple[bool, list[str]]:
         "procesador": "Procesador",
         "ram_gb": "RAM",
         "nombre_funcionario": "Funcionario responsable",
-        "rut_funcionario": "Funcionario válido seleccionado",
+        "rut_funcionario": "RUT funcionario",
         "departamento_funcionario": "Departamento del funcionario",
         "nombre_registrador": "Nombre del registrador",
-        "rut_registrador": "Registrador válido seleccionado",
+        "rut_registrador": "RUT registrador",
         "fecha_hora_registro": "Fecha y hora",
     }
 
@@ -299,6 +300,12 @@ def validar_payload(payload: dict) -> tuple[bool, list[str]]:
 
         if valor is None or valor == "":
             faltantes.append(nombre_visible)
+            
+    if payload.get("rut_funcionario") and not validar_rut(payload.get("rut_funcionario")):
+        faltantes.append("RUT funcionario válido")
+
+    if payload.get("rut_registrador") and not validar_rut(payload.get("rut_registrador")):
+        faltantes.append("RUT registrador válido")
 
     if not (
         payload.get("codigo_inventario_equipo")

@@ -19,6 +19,7 @@ from utils.payload import construir_payload, validar_payload, normalizar_ram_gb
 from utils.observaciones import (agregar_observacion_discos_secundarios, agregar_observacion_pantallas_integradas,)
 from utils.rename_pc import generar_nombre_equipo, renombrar_equipo
 from utils.logger import setup_logger
+from utils.rut import formatear_rut
 from utils.data_loader import (cargar_funcionarios, cargar_usuarios_sistema, cargar_departamentos,)
 
 from ui.estilos import configurar_estilo
@@ -73,6 +74,7 @@ class InventarioApp:
 
         configurar_estilo()
         construir_interfaz(self)
+        self._instalar_formateo_rut()
 
         self._set_estado("● Preparando carga automática…", C["gris_sub"])
         self.root.after(300, self._cargar_datos_automaticos)
@@ -109,6 +111,69 @@ class InventarioApp:
         if hasattr(self, "btn_registrar"):
             self.btn_registrar.config(state="disabled" if bloquear else "normal")
 
+    def _entrada_rut_permitida(self, valor_propuesto: str) -> bool:
+        caracteres = []
+
+        for c in str(valor_propuesto or ""):
+            if c.isdigit():
+                caracteres.append(c)
+            elif c.upper() == "K":
+                caracteres.append("K")
+            elif c in ".- ":
+                continue
+            else:
+                return False
+
+        if len(caracteres) > 9:
+            return False
+
+        if "K" in caracteres[:-1]:
+            return False
+
+        return True
+
+    def _bind_formato_rut(self, entry, variable, variable_visible=None) -> None:
+        if not entry:
+            return
+
+        vcmd = (self.root.register(self._entrada_rut_permitida), "%P")
+        entry.configure(validate="key", validatecommand=vcmd)
+
+        def aplicar_formato(_=None):
+            var_visible = variable_visible or variable
+            valor = formatear_rut(var_visible.get()) or ""
+
+            if variable_visible is not None:
+                if variable_visible.get() != valor:
+                    variable_visible.set(valor)
+
+            if variable.get() != valor:
+                variable.set(valor)
+
+            entry.icursor(tk.END)
+
+        entry.bind(
+            "<KeyRelease>",
+            lambda e: self.root.after_idle(aplicar_formato),
+            add="+",
+        )
+        entry.bind(
+            "<<Paste>>",
+            lambda e: self.root.after_idle(aplicar_formato),
+            add="+",
+        )
+
+    def _instalar_formateo_rut(self) -> None:
+        self._bind_formato_rut(
+            self.entry_rut_funcionario,
+            self.var_rut_funcionario,
+        )
+
+        self._bind_formato_rut(
+            self.buscador_registrador.entry,
+            self.var_rut_registrador,
+            self.buscador_registrador.var_buscar,
+        )
     # ── Edición de campos ──────────────────────────────────────────────────────
     def _habilitar_grupo_generico(self, entries: list) -> None:
         entries = [entry for entry in entries if entry]
@@ -149,8 +214,10 @@ class InventarioApp:
 
     # ── Buscadores ─────────────────────────────────────────────────────────────
     def _on_funcionario_seleccionado(self, persona: dict) -> None:
+        rut = formatear_rut(persona.get("rut", "")) or ""
+
         self.var_usuario.set(persona.get("nombre", ""))
-        self.var_rut_funcionario.set(persona.get("rut", ""))
+        self.var_rut_funcionario.set(rut)
 
         for entry in (
             getattr(getattr(self, "buscador_funcionario", None), "entry", None),
@@ -171,8 +238,15 @@ class InventarioApp:
         self.var_departamento_funcionario.set("")
 
     def _on_registrador_seleccionado(self, persona: dict) -> None:
-        self.var_rut_registrador.set(persona.get("rut", ""))
+        rut = formatear_rut(persona.get("rut", "")) or ""
+
+        self.var_rut_registrador.set(rut)
         self.var_nombre_registrador.set(persona.get("nombre", ""))
+
+        if hasattr(self, "buscador_registrador"):
+            self.buscador_registrador._set_valor_sin_trace(rut)
+            self.buscador_registrador._marcar_seleccionado(True)
+            self.buscador_registrador._ocultar_lista()
 
         for entry in (
             getattr(getattr(self, "buscador_registrador", None), "entry", None),
