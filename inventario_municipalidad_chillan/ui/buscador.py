@@ -19,6 +19,7 @@ class BuscadorAutocomplete(tk.Frame):
         formato_resultado=None,
         on_select=None,
         on_clear=None,
+        permitir_manual=False,
         **kwargs,
     ):
         super().__init__(parent, bg=C["gris_panel"])
@@ -31,6 +32,7 @@ class BuscadorAutocomplete(tk.Frame):
         self.formato_resultado = formato_resultado or self._formato_default
         self.on_select = on_select
         self.on_clear = on_clear
+        self.permitir_manual = permitir_manual
         self.resultados = []
         self._seleccionado = False
         self._trace_id = None
@@ -304,6 +306,11 @@ class BuscadorAutocomplete(tk.Frame):
             return
 
         if self._seleccionar_coincidencia_exacta():
+            return
+
+        if self.permitir_manual:
+            self.variable.set(self.var_buscar.get().strip())
+            self._ocultar_lista()
             return
 
         self.var_buscar.set("")

@@ -16,30 +16,18 @@ from utils.formato import formatear_capacidad
 from utils.respaldo import guardar_respaldo
 from utils.api_cliente import leer_url_api, enviar_payload_api
 from utils.payload import construir_payload, validar_payload, normalizar_ram_gb
-from utils.observaciones import (
-    agregar_observacion_discos_secundarios,
-    agregar_observacion_pantallas_integradas,
-)
+from utils.observaciones import (agregar_observacion_discos_secundarios, agregar_observacion_pantallas_integradas,)
 from utils.rename_pc import generar_nombre_equipo, renombrar_equipo
 from utils.logger import setup_logger
-from utils.data_loader import cargar_funcionarios, cargar_usuarios_sistema
+from utils.data_loader import (cargar_funcionarios, cargar_usuarios_sistema, cargar_departamentos,)
 
 from ui.estilos import configurar_estilo
 from ui.auto import mostrar_discos_en_auto_frame
 from ui.layout import construir_interfaz
 from ui.helpers import seccion, campo
-from ui.validacion import (
-    limpiar_validacion_visual,
-    marcar_validacion_visual,
-    set_entry_normal,
-)
+from ui.validacion import (limpiar_validacion_visual, marcar_validacion_visual, set_entry_normal,)
 
-from ui.bloques import (
-    crear_bloque_monitor,
-    crear_bloque_impresora,
-    renumerar_monitores,
-    renumerar_impresoras,
-)
+from ui.bloques import (crear_bloque_monitor, crear_bloque_impresora, renumerar_monitores, renumerar_impresoras,)
 
 
 class InventarioApp:
@@ -81,6 +69,7 @@ class InventarioApp:
 
         self.funcionarios_data = cargar_funcionarios() or []
         self.usuarios_sistema_data = cargar_usuarios_sistema() or []
+        self.departamentos_data = cargar_departamentos() or []
 
         configurar_estilo()
         construir_interfaz(self)
@@ -162,17 +151,23 @@ class InventarioApp:
     def _on_funcionario_seleccionado(self, persona: dict) -> None:
         self.var_usuario.set(persona.get("nombre", ""))
         self.var_rut_funcionario.set(persona.get("rut", ""))
-        self.var_departamento_funcionario.set(persona.get("departamento", ""))
 
         for entry in (
             getattr(getattr(self, "buscador_funcionario", None), "entry", None),
             getattr(self, "entry_rut_funcionario", None),
-            getattr(self, "entry_departamento_funcionario", None),
         ):
             set_entry_normal(entry)
 
     def _limpiar_funcionario(self) -> None:
         self.var_rut_funcionario.set("")
+        
+    def _on_departamento_seleccionado(self, departamento: dict) -> None:
+        self.var_departamento_funcionario.set(departamento.get("nombre", ""))
+
+        entry = getattr(getattr(self, "buscador_departamento", None), "entry", None)
+        set_entry_normal(entry)
+
+    def _limpiar_departamento(self) -> None:
         self.var_departamento_funcionario.set("")
 
     def _on_registrador_seleccionado(self, persona: dict) -> None:
@@ -368,12 +363,6 @@ class InventarioApp:
 
         payload = construir_payload(self)
         ok, faltantes = validar_payload(payload)
-
-        if not self.buscador_funcionario.es_seleccion_valida():
-            faltantes.append("Funcionario válido seleccionado")
-
-        if not self.buscador_registrador.es_seleccion_valida():
-            faltantes.append("Registrador válido seleccionado")
 
         marcar_validacion_visual(self, payload)
 

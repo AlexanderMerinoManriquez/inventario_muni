@@ -1,0 +1,407 @@
+[
+  {
+    "nombre": "ADMINISTRACION"
+  },
+  {
+    "nombre": "ADM-INFORMATICA"
+  },
+  {
+    "nombre": "ADM-EVENTOSRECREATIVOS"
+  },
+  {
+    "nombre": "DIDECO-HOSPEDERIA"
+  },
+  {
+    "nombre": "ADM-PSICOSOCIAL"
+  },
+  {
+    "nombre": "ADM-TRANSPARENCIA"
+  },
+  {
+    "nombre": "ADM-VIGILANTES"
+  },
+  {
+    "nombre": "ASEO"
+  },
+  {
+    "nombre": "ASEO-ORNATO"
+  },
+  {
+    "nombre": "ASEO-AREAS VERDES"
+  },
+  {
+    "nombre": "ASEO-DIMENSION"
+  },
+  {
+    "nombre": "ADM-EMERGENCIA"
+  },
+  {
+    "nombre": "CEMENTERIO"
+  },
+  {
+    "nombre": "CONCEJO"
+  },
+  {
+    "nombre": "CONTROL"
+  },
+  {
+    "nombre": "CULTURA"
+  },
+  {
+    "nombre": "DAF"
+  },
+  {
+    "nombre": "DAF-RENTAS"
+  },
+  {
+    "nombre": "DAF-R.R.H.H."
+  },
+  {
+    "nombre": "DAF-TESORERIA"
+  },
+  {
+    "nombre": "DAF-ADQUISICIONES"
+  },
+  {
+    "nombre": "DAF-CONTABILIDAD"
+  },
+  {
+    "nombre": "DIDECO"
+  },
+  {
+    "nombre": "EDUCACION"
+  },
+  {
+    "nombre": "EXTERIOR"
+  },
+  {
+    "nombre": "INSPECCION"
+  },
+  {
+    "nombre": "JURIDICA"
+  },
+  {
+    "nombre": "1ER JPL"
+  },
+  {
+    "nombre": "2DO JPL"
+  },
+  {
+    "nombre": "OBRAS"
+  },
+  {
+    "nombre": "OFICINA DE PARTES"
+  },
+  {
+    "nombre": "SALUD"
+  },
+  {
+    "nombre": "SECPLA"
+  },
+  {
+    "nombre": "SECRETARIA MUNICIPAL"
+  },
+  {
+    "nombre": "SUREFI"
+  },
+  {
+    "nombre": "TRANSITO"
+  },
+  {
+    "nombre": "TRANSPARENCIA EXTERNA"
+  },
+  {
+    "nombre": "ALCALDIA"
+  },
+  {
+    "nombre": "RELACIONES PUBLICAS"
+  },
+  {
+    "nombre": "PROTOCOLO"
+  },
+  {
+    "nombre": "SEGURIDAD PUBLICA"
+  },
+  {
+    "nombre": "DESARROLLO ECON. Y PRODUCTIVO"
+  },
+  {
+    "nombre": "DEPORTE Y RECREACION"
+  },
+  {
+    "nombre": "TURISMO"
+  },
+  {
+    "nombre": "OBRAS-DEPTO ELECTRICO"
+  },
+  {
+    "nombre": "ASEO-MEDIO AMBIENTE"
+  },
+  {
+    "nombre": "GABINETE"
+  },
+  {
+    "nombre": "DAF-COBRANZAS"
+  },
+  {
+    "nombre": "DIDECO-CHILE CRECE CONTIGO"
+  },
+  {
+    "nombre": "DIDECO-VIVIENDA"
+  },
+  {
+    "nombre": "DIDECO-HABITABILIDAD"
+  },
+  {
+    "nombre": "DIDECO-4 A 7"
+  },
+  {
+    "nombre": "SEGURIDAD PUBLICA - 24 HRS"
+  },
+  {
+    "nombre": "SECPLA - QUIERO MI BARRIO"
+  },
+  {
+    "nombre": "DIDECO-JEFAS DE HOGAR"
+  },
+  {
+    "nombre": "DIDECO-VINCULOS"
+  },
+  {
+    "nombre": "DAF-BIENESTAR"
+  },
+  {
+    "nombre": "DIDECO-ESTRATIFICACION SOCIAL"
+  },
+  {
+    "nombre": "DEPORTES Y RECREACION"
+  },
+  {
+    "nombre": "DELEGACION QUINCHAMALI"
+  },
+  {
+    "nombre": "DELEGACIÓN ORIENTE"
+  },
+  {
+    "nombre": "ADM-MERCADO"
+  },
+  {
+    "nombre": "DIDECO-OOCC"
+  },
+  {
+    "nombre": "DIDECO-COMUNICACIONES"
+  },
+  {
+    "nombre": "DIDECO-CENTRO DE LA MUJER"
+  },
+  {
+    "nombre": "SECPLA - PARTICIPACION CIUDADANA"
+  },
+  {
+    "nombre": "DIDECO-MUJER SEXUALIDAD Y MATERNIDAD"
+  },
+  {
+    "nombre": "DIDECO-CASA DE ACOGIDA"
+  },
+  {
+    "nombre": "CASCHILE"
+  },
+  {
+    "nombre": "SUREFI-ESTADIO"
+  },
+  {
+    "nombre": "DIDECO-ASISTENCIA SOCIAL"
+  },
+  {
+    "nombre": "ALCALDIA-COMUNICACIONES"
+  },
+  {
+    "nombre": "CULTURA-CENTRO CULTURAL"
+  },
+  {
+    "nombre": "DIDECO-PROGRAMA CALLE"
+  },
+  {
+    "nombre": "DIDECO-PROGRAMA FAMILIAS"
+  },
+  {
+    "nombre": "OBRAS-EDIFICACIÓN"
+  },
+  {
+    "nombre": "DIDECO-EMPODERAMIENTO DESARROLLO INTEGRAL"
+  },
+  {
+    "nombre": "OMIL"
+  },
+  {
+    "nombre": "DAF-GESTION DE PAGO"
+  },
+  {
+    "nombre": "SEGURIDAD PUBLICA - OPERADOR DE CAMARAS"
+  },
+  {
+    "nombre": "ASEO-CENTRO VETERINARIO"
+  },
+  {
+    "nombre": "ASEO-MEJORAMIENTO DE ESPACIOS PÚBLICOS"
+  },
+  {
+    "nombre": "ALCALDIA-REDES SOCIALES"
+  },
+  {
+    "nombre": "DIDECO-OMAJ"
+  },
+  {
+    "nombre": "SUREFI-CENTRO DEPORTIVO QUILAMAPU"
+  },
+  {
+    "nombre": "DIDECO-SUBISDIOS ESTATALES Y PENSIONES"
+  },
+  {
+    "nombre": "DIDECO-SUBSIDIOS ESTATALES"
+  },
+  {
+    "nombre": "CULTURA-MUSEO ARRAU"
+  },
+  {
+    "nombre": "DIDECO- PREVENCIÓN DE LA VIOLENCIA"
+  },
+  {
+    "nombre": "DIDECO-ADULTO MAYOR"
+  },
+  {
+    "nombre": "DAF-HONORARIOS"
+  },
+  {
+    "nombre": "SEGURIDAD PUBLICA-APARCADERO MUNICIPAL"
+  },
+  {
+    "nombre": "SALUD-FINANZAS"
+  },
+  {
+    "nombre": "CULTURA-BIBLIOTECA"
+  },
+  {
+    "nombre": "DIDEPRO"
+  },
+  {
+    "nombre": "DIDEPRO-OMIL"
+  },
+  {
+    "nombre": "INSPECCION-JUSTICIA VECINAL"
+  },
+  {
+    "nombre": "DIDEPRO-PRODESAL"
+  },
+  {
+    "nombre": "OBRAS-VIAL"
+  },
+  {
+    "nombre": "DIDECO-OPD"
+  },
+  {
+    "nombre": "DIDECO-CENTRO DIURNO"
+  },
+  {
+    "nombre": "DAF-CONVENIOS"
+  },
+  {
+    "nombre": "DAF-INVENTARIO"
+  },
+  {
+    "nombre": "DIDECO-RESIDENCIA TRANSITORIA"
+  },
+  {
+    "nombre": "DIDECO-SUBSIDIOS Y PENSIONES"
+  },
+  {
+    "nombre": "DIDECO-ORGANIZACIONES COMUNITARIAS"
+  },
+  {
+    "nombre": "DIDECO-CONTROL Y GESTION Y LOGISTICA"
+  },
+  {
+    "nombre": "DIDECO-REGISTRO SOCIAL DE HOGARES"
+  },
+  {
+    "nombre": "DIDECO-BECAS"
+  },
+  {
+    "nombre": "DIDECO-OFICINA DE LA DIVERSIDAD SOCIAL Y CULTURAL"
+  },
+  {
+    "nombre": "DIDECO-MUJERES JEFAS DE HOGAR"
+  },
+  {
+    "nombre": "DIDECO-MUJERES DERECHOS SEXUALES Y REPRODUCTIVOS"
+  },
+  {
+    "nombre": "PROGRAMA DE PREVENCION DE LA VIOLENCIA DE GENERO"
+  },
+  {
+    "nombre": "DIDECO-RED LOCAL DE APOYOS Y CIUDADANOS"
+  },
+  {
+    "nombre": "DIDECO-DISCAPACIDAD"
+  },
+  {
+    "nombre": "DIDECO-OMAR"
+  },
+  {
+    "nombre": "DIDECO-EMERGENCIAS SOCIALES"
+  },
+  {
+    "nombre": "DIDECO-CONSULTORIO JURIDICO"
+  },
+  {
+    "nombre": "DIDECO-DERECHO DE ASEO"
+  },
+  {
+    "nombre": "DIDECO-SERNAC"
+  },
+  {
+    "nombre": "DIDECO-BIENES NACIONALES MUNICIPAL"
+  },
+  {
+    "nombre": "DIDECO-PROGRAMA APOYO A LA SEGURIDAD ALIMENTARIA"
+  },
+  {
+    "nombre": "DIDECO-ASENTAMIENTOS PRECARIOS(CAMPAMENTOS)"
+  },
+  {
+    "nombre": "OBRAS-VIAL ELECTRICOS"
+  },
+  {
+    "nombre": "CULTURA-MUSEO CIENCIAS NATURALES"
+  },
+  {
+    "nombre": "INSPECCION-SENDA"
+  },
+  {
+    "nombre": "DAF-PREVENCION DE RIESGO"
+  },
+  {
+    "nombre": "DIDEPRO-COWORK"
+  },
+  {
+    "nombre": "DIDECO-PROGRAMA DE ACOMPAÑAMIENTO INTEGRAL FAMILIAR"
+  },
+  {
+    "nombre": "OBRAS-SUBDIVISION Y LOTEO"
+  },
+  {
+    "nombre": "OBRAS-EJECUCION"
+  },
+  {
+    "nombre": "TRANSITO-LICENCIAS"
+  },
+  {
+    "nombre": "ADM-ORGANISMO DE SEGURIDAD INTERNO"
+  },
+  {
+    "nombre": "DIDECO-OFICINA DE MEDIACION"
+  },
+  {
+    "nombre": "CULTURA-ESCUELA ARTISTICA"
+  }
+]

@@ -25,7 +25,7 @@ def limpiar_validacion_visual(app) -> None:
     for entry in (
         getattr(getattr(app, "buscador_funcionario", None), "entry", None),
         getattr(app, "entry_rut_funcionario", None),
-        getattr(app, "entry_departamento_funcionario", None),
+        getattr(getattr(app, "buscador_departamento", None), "entry", None),
         getattr(getattr(app, "buscador_registrador", None), "entry", None),
         getattr(app, "entry_nombre_registrador", None),
     ):
@@ -46,16 +46,16 @@ def limpiar_validacion_visual(app) -> None:
 
 
 def marcar_validacion_visual(app, payload: dict) -> None:
-    if not app.buscador_funcionario.es_seleccion_valida():
+    if not payload.get("nombre_funcionario"):
         set_entry_error(app, app.buscador_funcionario.entry)
 
     if not payload.get("rut_funcionario"):
         set_entry_error(app, app.entry_rut_funcionario)
 
     if not payload.get("departamento_funcionario"):
-        set_entry_error(app, app.entry_departamento_funcionario)
+        set_entry_error(app, app.buscador_departamento.entry)
 
-    if not app.buscador_registrador.es_seleccion_valida():
+    if not payload.get("rut_registrador"):
         set_entry_error(app, app.buscador_registrador.entry)
 
     if not payload.get("nombre_registrador"):

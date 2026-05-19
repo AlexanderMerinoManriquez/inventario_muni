@@ -1,4 +1,5 @@
 import csv
+import json
 
 def cargar_funcionarios(path="data/funcionarios.csv"):
     personas = []
@@ -37,3 +38,23 @@ def cargar_usuarios_sistema(path="data/usuarios_sistema.csv"):
         pass
 
     return personas
+
+def cargar_departamentos(path="data/departamentos.json"):
+    departamentos = []
+
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+
+            for item in data:
+                nombre = str(item.get("nombre", "")).strip()
+
+                if nombre:
+                    departamentos.append({
+                        "nombre": nombre
+                    })
+
+    except Exception:
+        pass
+
+    return departamentos

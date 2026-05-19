@@ -172,33 +172,36 @@ def build_acciones_frame(app, parent) -> None:
         font=LABEL_FONT,
     )
     app.lbl_estado.pack(fill="x", pady=(10, 0))
-
-
+    
 def build_manual_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Funcionario y departamento asignado")
+    frame = app._seccion(parent, "Departamento y funcionario asignado")
     frame.columnconfigure(1, weight=1)
 
-    btn_editar_func = _boton_editar(
+    # ── Departamento ──────────────────────────────────────────────────────────
+    _label_campo(
         frame,
-        "Editar RUT y departamento del funcionario",
-        lambda: app._habilitar_grupo_generico([
-            app.entry_rut_funcionario,
-            app.entry_departamento_funcionario
-        ]),
-    )
-    btn_editar_func.grid(
-        row=0,
-        column=2,
-        sticky="ne",
-        padx=(0, 8),
-        pady=5,
-    )
+        "Departamento:",
+        obligatorio=True,
+    ).grid(row=0, column=0, sticky="w", padx=(10, 6), pady=5)
 
+    app.buscador_departamento = BuscadorAutocomplete(
+        frame,
+        datos=app.departamentos_data,
+        variable=app.var_departamento_funcionario,
+        campo_busqueda="nombre",
+        campo_valor="nombre",
+        formato_resultado=lambda d: d.get("nombre", ""),
+        on_select=app._on_departamento_seleccionado,
+        on_clear=app._limpiar_departamento,
+    )
+    app.buscador_departamento.grid(row=0, column=1, sticky="ew", padx=(0, 6), pady=5)
+
+    # ── Funcionario ───────────────────────────────────────────────────────────
     _label_campo(
         frame,
         "Funcionario responsable:",
         obligatorio=True,
-    ).grid(row=0, column=0, sticky="w", padx=(10, 6), pady=5)
+    ).grid(row=1, column=0, sticky="w", padx=(10, 6), pady=5)
 
     app.buscador_funcionario = BuscadorAutocomplete(
         frame,
@@ -206,31 +209,40 @@ def build_manual_frame(app, parent) -> None:
         variable=app.var_usuario,
         campo_busqueda="nombre",
         campo_valor="nombre",
-        campos_extra_busqueda=["rut", "departamento"],
+        campos_extra_busqueda=["rut"],
         formato_resultado=lambda p: (
-            f"{p.get('nombre', '')} — {p.get('rut', '')} — {p.get('departamento', '')}"
+            f"{p.get('nombre', '')} — {p.get('rut', '')}"
         ),
         on_select=app._on_funcionario_seleccionado,
         on_clear=app._limpiar_funcionario,
+        permitir_manual=True,
     )
-    app.buscador_funcionario.grid(row=0, column=1, sticky="ew", padx=(0, 6), pady=5)
+    app.buscador_funcionario.grid(row=1, column=1, sticky="ew", padx=(0, 6), pady=5)
 
+    # ── RUT funcionario ───────────────────────────────────────────────────────
     app.entry_rut_funcionario = app._campo(
         frame,
         "RUT funcionario:",
         app.var_rut_funcionario,
-        1,
+        2,
         readonly=True,
         obligatorio=True,
     )
 
-    app.entry_departamento_funcionario = app._campo(
+    btn_editar_func = _boton_editar(
         frame,
-        "Departamento:",
-        app.var_departamento_funcionario,
-        2,
-        readonly=True,
-        obligatorio=True,
+        "Editar RUT del funcionario",
+        lambda: app._habilitar_grupo_generico([
+            app.entry_rut_funcionario,
+        ]),
+    )
+
+    btn_editar_func.grid(
+        row=2,
+        column=2,
+        sticky="ne",
+        padx=(0, 8),
+        pady=5,
     )
 
     _mensaje_obligatorios(frame, fila=3, columnspan=2)
@@ -248,7 +260,7 @@ def build_trazabilidad_frame(app, parent) -> None:
         ]),
     )
     btn_editar_reg.grid(
-        row=0,
+        row=2,
         column=2,
         sticky="ne",
         padx=(0, 8),
@@ -297,6 +309,7 @@ def build_trazabilidad_frame(app, parent) -> None:
         formato_resultado=lambda p: f"{p.get('rut', '')} — {p.get('nombre', '')}",
         on_select=app._on_registrador_seleccionado,
         on_clear=app._limpiar_registrador,
+        permitir_manual=True,
     )
     app.buscador_registrador.grid(row=1, column=1, sticky="ew", padx=(0, 6), pady=5)
 
