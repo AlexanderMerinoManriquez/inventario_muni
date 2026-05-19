@@ -60,7 +60,7 @@ def _boton_editar(parent, texto_tooltip: str, command):
 
 
 def build_monitores_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Monitores del funcionario")
+    frame = app._seccion(parent, "Monitores asignados")
 
     btn = ttk.Button(
         frame,
@@ -86,7 +86,7 @@ def build_monitores_frame(app, parent) -> None:
 
 
 def build_impresoras_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Impresoras del funcionario")
+    frame = app._seccion(parent, "Impresoras asignadas")
 
     btn = ttk.Button(
         frame,

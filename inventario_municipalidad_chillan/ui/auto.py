@@ -9,7 +9,7 @@ from utils.formato import formatear_capacidad
 def build_auto_frame(app, parent) -> None:
     frame = app._seccion(
         parent,
-        "Equipo principal del funcionario",
+        "Equipo asignado",
         fill="both",
         expand=False,
     )

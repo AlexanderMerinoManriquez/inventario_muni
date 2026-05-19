@@ -287,8 +287,8 @@ def validar_payload(payload: dict) -> tuple[bool, list[str]]:
         "ram_gb": "RAM",
         "nombre_funcionario": "Funcionario responsable",
         "rut_funcionario": "RUT funcionario",
-        "departamento_funcionario": "Departamento del funcionario",
-        "nombre_registrador": "Nombre del registrador",
+        "departamento_funcionario": "Departamento",
+        "nombre_registrador": "Nombre registrador",
         "rut_registrador": "RUT registrador",
         "fecha_hora_registro": "Fecha y hora",
     }

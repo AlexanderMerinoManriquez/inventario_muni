@@ -47,11 +47,11 @@ CAMPOS_IMPRESORA = [
 ]
 
 OBLIGATORIOS = {
-    "nombre_funcionario":          "Funcionario responsable",
-    "rut_funcionario":             "RUT funcionario",
-    "departamento_funcionario":    "Departamento del funcionario",
-    "nombre_registrador":          "Nombre del registrador",
-    "rut_registrador":             "RUT registrador",
+    "nombre_funcionario":       "Funcionario responsable",
+    "rut_funcionario":          "RUT funcionario",
+    "departamento_funcionario": "Departamento",
+    "nombre_registrador":       "Nombre registrador",
+    "rut_registrador":          "RUT registrador",
 }
 # ── Paleta institucional ───────────────────────────────────────────────────────
 C = {
