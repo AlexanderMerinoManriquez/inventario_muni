@@ -183,7 +183,7 @@ def build_manual_frame(app, parent) -> None:
         "Editar RUT y departamento del funcionario",
         lambda: app._habilitar_grupo_generico([
             app.entry_rut_funcionario,
-            app.entry_departamento_manual,
+            app.entry_departamento_funcionario
         ]),
     )
     btn_editar_func.grid(
@@ -224,10 +224,10 @@ def build_manual_frame(app, parent) -> None:
         obligatorio=True,
     )
 
-    app.entry_departamento_manual = app._campo(
+    app.entry_departamento_funcionario = app._campo(
         frame,
         "Departamento:",
-        app.var_departamento_manual,
+        app.var_departamento_funcionario,
         2,
         readonly=True,
         obligatorio=True,
@@ -287,23 +287,23 @@ def build_trazabilidad_frame(app, parent) -> None:
         obligatorio=True,
     ).grid(row=1, column=0, sticky="w", padx=(10, 6), pady=5)
 
-    app.buscador_registrado_por = BuscadorAutocomplete(
+    app.buscador_registrador = BuscadorAutocomplete(
         frame,
         datos=app.usuarios_sistema_data,
-        variable=app.var_rut_registrado_por,
+        variable=app.var_rut_registrador,
         campo_busqueda="rut",
         campo_valor="rut",
         campos_extra_busqueda=["nombre"],
         formato_resultado=lambda p: f"{p.get('rut', '')} — {p.get('nombre', '')}",
-        on_select=app._on_registrado_por_seleccionado,
+        on_select=app._on_registrador_seleccionado,
         on_clear=app._limpiar_registrador,
     )
-    app.buscador_registrado_por.grid(row=1, column=1, sticky="ew", padx=(0, 6), pady=5)
+    app.buscador_registrador.grid(row=1, column=1, sticky="ew", padx=(0, 6), pady=5)
 
     app.entry_nombre_registrador = app._campo(
         frame,
         "Nombre registrador:",
-        app.var_registrado_por,
+        app.var_nombre_registrador,
         2,
         readonly=True,
         obligatorio=True,

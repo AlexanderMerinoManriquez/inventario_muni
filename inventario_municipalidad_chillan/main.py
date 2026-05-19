@@ -74,10 +74,10 @@ class InventarioApp:
 
         self.var_usuario = tk.StringVar()
         self.var_rut_funcionario = tk.StringVar()
-        self.var_departamento_manual = tk.StringVar()
+        self.var_departamento_funcionario = tk.StringVar()
 
-        self.var_registrado_por = tk.StringVar()
-        self.var_rut_registrado_por = tk.StringVar()
+        self.var_nombre_registrador = tk.StringVar()
+        self.var_rut_registrador = tk.StringVar()
 
         self.funcionarios_data = cargar_funcionarios() or []
         self.usuarios_sistema_data = cargar_usuarios_sistema() or []
@@ -162,36 +162,36 @@ class InventarioApp:
     def _on_funcionario_seleccionado(self, persona: dict) -> None:
         self.var_usuario.set(persona.get("nombre", ""))
         self.var_rut_funcionario.set(persona.get("rut", ""))
-        self.var_departamento_manual.set(persona.get("departamento", ""))
+        self.var_departamento_funcionario.set(persona.get("departamento", ""))
 
         for entry in (
             getattr(getattr(self, "buscador_funcionario", None), "entry", None),
             getattr(self, "entry_rut_funcionario", None),
-            getattr(self, "entry_departamento_manual", None),
+            getattr(self, "entry_departamento_funcionario", None),
         ):
             set_entry_normal(entry)
 
     def _limpiar_funcionario(self) -> None:
         self.var_rut_funcionario.set("")
-        self.var_departamento_manual.set("")
+        self.var_departamento_funcionario.set("")
 
-    def _on_registrado_por_seleccionado(self, persona: dict) -> None:
-        self.var_rut_registrado_por.set(persona.get("rut", ""))
-        self.var_registrado_por.set(persona.get("nombre", ""))
+    def _on_registrador_seleccionado(self, persona: dict) -> None:
+        self.var_rut_registrador.set(persona.get("rut", ""))
+        self.var_nombre_registrador.set(persona.get("nombre", ""))
 
         for entry in (
-            getattr(getattr(self, "buscador_registrado_por", None), "entry", None),
+            getattr(getattr(self, "buscador_registrador", None), "entry", None),
             getattr(self, "entry_nombre_registrador", None),
         ):
             set_entry_normal(entry)
 
     def _limpiar_registrador(self) -> None:
-        self.var_registrado_por.set("")
+        self.var_nombre_registrador.set("")
 
     # ── Nombre PC ──────────────────────────────────────────────────────────────
     def probar_nombre_equipo(self) -> None:
         nombre_sugerido = generar_nombre_equipo(
-            self.var_departamento_manual.get(),
+            self.var_departamento_funcionario.get(),
             self.var_usuario.get(),
         )
 
@@ -370,10 +370,10 @@ class InventarioApp:
         ok, faltantes = validar_payload(payload)
 
         if not self.buscador_funcionario.es_seleccion_valida():
-            faltantes.append("Funcionario válido seleccionado desde la lista")
+            faltantes.append("Funcionario válido seleccionado")
 
-        if not self.buscador_registrado_por.es_seleccion_valida():
-            faltantes.append("Registrador válido seleccionado desde la lista")
+        if not self.buscador_registrador.es_seleccion_valida():
+            faltantes.append("Registrador válido seleccionado")
 
         marcar_validacion_visual(self, payload)
 
@@ -454,7 +454,7 @@ class InventarioApp:
         self._set_estado("● Registrado correctamente ✓", C["verde"])
 
         nombre_sugerido = generar_nombre_equipo(
-            self.var_departamento_manual.get(),
+            self.var_departamento_funcionario.get(),
             self.var_usuario.get(),
         )
 

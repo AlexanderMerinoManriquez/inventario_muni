@@ -262,10 +262,10 @@ def construir_payload(app) -> dict:
 
         "nombre_funcionario": limpiar_var(app.var_usuario),
         "rut_funcionario": limpiar_var(app.var_rut_funcionario),
-        "departamento_manual": limpiar_var(app.var_departamento_manual),
+        "departamento_funcionario": limpiar_var(app.var_departamento_funcionario),
 
-        "registrado_por": limpiar_var(app.var_registrado_por),
-        "rut_registrado_por": limpiar_var(app.var_rut_registrado_por),
+        "nombre_registrador": limpiar_var(app.var_nombre_registrador),
+        "rut_registrador": limpiar_var(app.var_rut_registrador),
 
         "fecha_hora_registro": (
             app.fecha_hora_envio
@@ -285,10 +285,10 @@ def validar_payload(payload: dict) -> tuple[bool, list[str]]:
         "procesador": "Procesador",
         "ram_gb": "RAM",
         "nombre_funcionario": "Funcionario responsable",
-        "rut_funcionario": "Funcionario válido desde lista",
-        "departamento_manual": "Departamento",
-        "registrado_por": "Registrado por",
-        "rut_registrado_por": "Registrador válido desde lista",
+        "rut_funcionario": "Funcionario válido seleccionado",
+        "departamento_funcionario": "Departamento del funcionario",
+        "nombre_registrador": "Nombre del registrador",
+        "rut_registrador": "Registrador válido seleccionado",
         "fecha_hora_registro": "Fecha y hora",
     }
 
