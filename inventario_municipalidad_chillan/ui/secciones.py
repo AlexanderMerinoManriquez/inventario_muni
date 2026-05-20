@@ -193,6 +193,7 @@ def build_manual_frame(app, parent) -> None:
         formato_resultado=lambda d: d.get("nombre", ""),
         on_select=app._on_departamento_seleccionado,
         on_clear=app._limpiar_departamento,
+        permitir_manual=True,
     )
     app.buscador_departamento.grid(row=0, column=1, sticky="ew", padx=(0, 6), pady=5)
 

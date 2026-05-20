@@ -14,7 +14,10 @@ CONFIG_PATH   = os.path.join(BASE_DIR, "config.txt")
 RESPALDOS_DIR = os.path.join(BASE_DIR, "RESPALDOS_FALLIDOS")
 ICON_PATH     = os.path.join(BASE_DIR, "assets", "iconoMuni.png")
 BANNER_PATH   = os.path.join(BASE_DIR, "assets", "Bannermuni.png")
-
+# ── API datos municipales ─────────────────────────────────────────────────────
+API_FUNCIONARIOS_URL = ""
+API_USUARIOS_SISTEMA_URL = ""
+API_DATOS_TIMEOUT = 8
 # ── Campos automáticos ────────────────────────────────────────────────────────
 CAMPOS_AUTO = [
     ("nombre_pc",         socket.gethostname,   "Nombre PC"),

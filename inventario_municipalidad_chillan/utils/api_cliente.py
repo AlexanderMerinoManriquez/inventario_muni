@@ -20,8 +20,7 @@ def enviar_payload_api(url: str, payload: dict) -> dict:
         resp = requests.post(
             url,
             json=payload,
-            headers={"ngrok-skip-browser-warning": "true"},
-            timeout=60,
+            timeout=30,
         )
 
     except requests.exceptions.RequestException as e:
