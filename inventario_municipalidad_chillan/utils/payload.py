@@ -3,55 +3,7 @@ from datetime import datetime
 
 from utils.discos_modelo import extraer_capacidad_gb, separar_disco_principal
 from utils.rut import formatear_rut, validar_rut
-
-
-SERIALES_INVALIDOS = {
-    "",
-    "0",
-    "00",
-    "000",
-    "0000",
-    "00000",
-    "000000",
-    "NONE",
-    "UNKNOWN",
-    "DESCONOCIDO",
-    "NO DETECTADO",
-    "SIN SERIAL",
-    "SIN SERIE",
-    "SIN_SERIE",
-    "N/A",
-    "NA",
-    "NULL",
-    "ERROR",
-    "DEFAULT STRING",
-    "DEFAULTSTRING",
-    "SYSTEM SERIAL NUMBER",
-    "SERIAL NUMBER",
-    "TO BE FILLED BY O.E.M.",
-    "TO BE FILLED BY OEM",
-    "TOBEFILLEDBYO.E.M.",
-    "TOBEFILLEDBYOEM",
-    "NOT APPLICABLE",
-    "NOTAPPLICABLE",
-}
-
-
-PATRONES_SERIAL_INVALIDO = (
-    "WSD",
-    "SWD\\",
-    "USBPRINT\\",
-    "PRINTENUM\\",
-    "ROOT\\",
-    "UMB\\",
-    "BTH\\",
-    "BTHENUM\\",
-    "DISPLAY\\",
-    "MONITOR\\",
-    "PCI\\",
-    "ACPI\\",
-    "LOCALPRINTQUEUE",
-)
+from utils.serial_utils import normalizar_serial
 
 
 def limpiar_texto(valor) -> str | None:
@@ -68,51 +20,8 @@ def normalizar_codigo_inventario(valor) -> str | None:
     return texto or None
 
 
-def _es_guid(valor: str) -> bool:
-    return bool(
-        re.fullmatch(
-            r"\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?",
-            str(valor or "").strip().upper(),
-        )
-    )
-
-
 def normalizar_identificador(valor) -> str | None:
-    serial = str(valor or "").strip().upper().strip("{}")
-
-    if not serial:
-        return None
-
-    serial_compacto = re.sub(r"[\s\-_\.]+", "", serial)
-
-    if serial in SERIALES_INVALIDOS or serial_compacto in SERIALES_INVALIDOS:
-        return None
-
-    if len(serial_compacto) < 3:
-        return None
-
-    if _es_guid(serial):
-        return None
-
-    if any(patron in serial for patron in PATRONES_SERIAL_INVALIDO):
-        return None
-
-    if "\\" in serial or "/" in serial:
-        return None
-
-    if "&" in serial:
-        return None
-
-    if re.fullmatch(r"0+", serial_compacto):
-        return None
-
-    if re.fullmatch(r"F+", serial_compacto):
-        return None
-
-    if re.fullmatch(r"X+", serial_compacto):
-        return None
-
-    return serial
+    return normalizar_serial(valor, min_len=3)
 
 
 def extraer_numero_decimal(valor) -> float | None:

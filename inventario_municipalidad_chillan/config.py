@@ -15,8 +15,12 @@ RESPALDOS_DIR = os.path.join(BASE_DIR, "RESPALDOS_FALLIDOS")
 ICON_PATH     = os.path.join(BASE_DIR, "assets", "iconoMuni.png")
 BANNER_PATH   = os.path.join(BASE_DIR, "assets", "Bannermuni.png")
 # ── API datos municipales ─────────────────────────────────────────────────────
-API_FUNCIONARIOS_URL = ""
-API_USUARIOS_SISTEMA_URL = ""
+API_FUNCIONARIOS_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
+API_USUARIOS_SISTEMA_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
+
+API_SOURCE_FUNCIONARIOS = "funcionarios"
+API_SOURCE_USUARIOS_SISTEMA = "usuarios_ti"
+
 API_DATOS_TIMEOUT = 8
 # ── Campos automáticos ────────────────────────────────────────────────────────
 CAMPOS_AUTO = [

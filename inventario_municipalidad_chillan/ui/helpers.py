@@ -54,32 +54,6 @@ def campo(parent, texto: str, variable: tk.StringVar, fila: int,
 
     return entry
 
-
-def campo_ubicacion(app, parent, fila: int) -> ttk.Entry:
-    ttk.Label(
-        parent,
-        text="Ubicación:",
-        foreground=C["label_claro"],
-        font=("Segoe UI", 9),
-    ).grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
-
-    inner = ttk.Frame(parent)
-    inner.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
-    inner.columnconfigure(0, weight=1)
-
-    entry = ttk.Entry(inner, textvariable=app.var_ubicacion, state="readonly")
-    entry.grid(row=0, column=0, sticky="ew", padx=(0, 6))
-
-    ttk.Button(
-        inner,
-        text="✎ Editar",
-        style="Edit.TButton",
-        command=lambda: app._habilitar_grupo_generico([entry]),
-    ).grid(row=0, column=1)
-
-    return entry
-
-
 class Tooltip:
     def __init__(self, widget, texto, delay=600):
         self.widget = widget

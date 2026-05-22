@@ -3,13 +3,19 @@ import requests
 from config import API_DATOS_TIMEOUT
 
 
-def consultar_api_get(url: str) -> list:
+def consultar_api_get(url: str, source: str | None = None) -> list:
     if not url:
         return []
+
+    params = {}
+
+    if source:
+        params["source"] = source
 
     try:
         resp = requests.get(
             url,
+            params=params,
             timeout=API_DATOS_TIMEOUT,
         )
         resp.raise_for_status()

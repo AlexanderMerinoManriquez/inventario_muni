@@ -1,11 +1,11 @@
 import socket
 
-def obtener_ip():
+
+def obtener_ip() -> str:
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
         return ip
-    except:
+
+    except Exception:
         return "IP desconocida"

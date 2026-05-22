@@ -1,7 +1,11 @@
 import json
 import math
-import re
 import subprocess
+
+from utils.serial_utils import (
+    normalizar_serial as _normalizar_serial,
+    extraer_serial_desde_ruta as _extraer_serial_desde_ruta,
+)
 
 
 FABRICANTES = {
@@ -21,31 +25,6 @@ FABRICANTES = {
     "BNQ": "BenQ",
     "VSC": "ViewSonic",
     "APP": "Apple",
-}
-
-
-SERIALES_INVALIDOS = {
-    "",
-    "0",
-    "00",
-    "000",
-    "0000",
-    "00000",
-    "000000",
-    "0000000",
-    "00000000",
-    "NONE",
-    "UNKNOWN",
-    "DESCONOCIDO",
-    "NO DETECTADO",
-    "SIN SERIAL",
-    "SIN_SERIE",
-    "N/A",
-    "NA",
-    "DEFAULT STRING",
-    "SYSTEM SERIAL NUMBER",
-    "TO BE FILLED BY O.E.M.",
-    "TO BE FILLED BY OEM",
 }
 
 
@@ -98,61 +77,6 @@ def _limpiar_wmi(valor):
 
     except Exception:
         return ""
-
-
-def _es_guid(valor: str) -> bool:
-    return bool(
-        re.fullmatch(
-            r"\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?",
-            str(valor or "").strip().upper(),
-        )
-    )
-
-
-def _normalizar_serial(valor: str) -> str:
-    serial = str(valor or "").strip().upper().strip("{}")
-
-    if not serial:
-        return ""
-
-    serial_compacto = re.sub(r"[\s\-_\.]+", "", serial)
-
-    if serial in SERIALES_INVALIDOS or serial_compacto in SERIALES_INVALIDOS:
-        return ""
-
-    if len(serial_compacto) < 3:
-        return ""
-
-    if _es_guid(serial):
-        return ""
-
-    patrones_invalidos = (
-        "DISPLAY\\",
-        "MONITOR\\",
-        "ROOT\\",
-        "SWD\\",
-        "WSD",
-        "UID",
-        "PCI\\",
-        "ACPI\\",
-    )
-
-    if any(p in serial for p in patrones_invalidos):
-        return ""
-
-    if "\\" in serial or "/" in serial:
-        return ""
-
-    if "&" in serial:
-        return ""
-
-    if re.fullmatch(r"0+", serial_compacto):
-        return ""
-
-    if re.fullmatch(r"F+", serial_compacto):
-        return ""
-
-    return serial
 
 
 def _normalizar_marca(codigo):
@@ -236,20 +160,6 @@ def _es_pantalla_integrada(valor) -> bool:
         return False
 
     return codigo in VIDEO_OUTPUT_INTEGRADO
-
-
-def _extraer_serial_desde_ruta(valor: str) -> str:
-    texto = str(valor or "").strip()
-
-    if not texto or "\\" not in texto:
-        return _normalizar_serial(texto)
-
-    candidato = texto.split("\\")[-1].strip()
-    candidato = candidato.strip("{}")
-    candidato = re.sub(r"[^A-Za-z0-9\-_.]", "", candidato)
-
-    return _normalizar_serial(candidato)
-
 
 def obtener_monitores():
     script = r"""
@@ -349,9 +259,10 @@ $resultado | ConvertTo-Json -Depth 5 -Compress
             video_output = item.get("VideoOutputTechnology")
 
             serial = (
-                _normalizar_serial(serial_raw)
-                or _extraer_serial_desde_ruta(item.get("ParentDeviceID"))
-                or _extraer_serial_desde_ruta(item.get("BusParent"))
+                _normalizar_serial(serial_raw, min_len=3)
+                or _extraer_serial_desde_ruta(item.get("ParentDeviceID"), min_len=3)
+                or _extraer_serial_desde_ruta(item.get("BusParent"), min_len=3)
+                or ""
             )
 
             monitores.append({

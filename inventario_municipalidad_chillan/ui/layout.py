@@ -30,10 +30,8 @@ def construir_interfaz(app) -> None:
     win_id = canvas.create_window((0, 0), window=app.scroll_frame, anchor="nw")
     canvas.configure(yscrollcommand=sb.set)
     canvas.bind("<Configure>", lambda e: canvas.itemconfigure(win_id, width=e.width))
-    canvas.bind_all(
-        "<MouseWheel>",
-        lambda e: canvas.yview_scroll(int(-1 * e.delta / 120), "units"),
-    )
+    
+    canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * e.delta / 120), "units"))
 
     canvas.pack(side="left", fill="both", expand=True)
     sb.pack(side="right", fill="y")

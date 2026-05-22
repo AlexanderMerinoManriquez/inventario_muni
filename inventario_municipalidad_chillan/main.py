@@ -338,11 +338,6 @@ class InventarioApp:
         errores = []
 
         try:
-            admin()
-        except Exception as e:
-            errores.append(f"admin(): {e}")
-
-        try:
             self.tipo_equipo_fisico = detectar_tipo_equipo()
         except Exception as e:
             self.tipo_equipo_fisico = "DESCONOCIDO"
@@ -434,6 +429,8 @@ class InventarioApp:
     # ── Envío ──────────────────────────────────────────────────────────────────
     def enviar_datos(self) -> None:
         limpiar_validacion_visual(self)
+
+        self.fecha_hora_envio = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         payload = construir_payload(self)
         ok, faltantes = validar_payload(payload)

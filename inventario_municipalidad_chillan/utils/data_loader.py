@@ -1,68 +1,23 @@
+import html
 import json
 
 from config import (
     API_FUNCIONARIOS_URL,
     API_USUARIOS_SISTEMA_URL,
+    API_SOURCE_FUNCIONARIOS,
+    API_SOURCE_USUARIOS_SISTEMA,
 )
 from utils.api_datos import consultar_api_get
 from utils.rut import formatear_rut
 
 
 def _texto(valor) -> str:
-    return str(valor or "").strip()
-
-
-def _obtener(item: dict, *claves: str) -> str:
-    for clave in claves:
-        valor = item.get(clave)
-
-        if valor is not None and str(valor).strip():
-            return str(valor).strip()
-
-    return ""
-
-
-def _construir_nombre_persona(item: dict) -> str:
-    nombre_completo = _obtener(
-        item,
-        "nombre_completo",
-        "nombreCompleto",
-        "funcionario",
-        "usuario",
-    )
-
-    if nombre_completo:
-        return nombre_completo
-
-    nombres = _obtener(item, "nombres", "nombre")
-    apellido_paterno = _obtener(
-        item,
-        "apellido_paterno",
-        "apellidoPaterno",
-        "apellidopaterno",
-    )
-    apellido_materno = _obtener(
-        item,
-        "apellido_materno",
-        "apellidoMaterno",
-        "apellidomaterno",
-    )
-
-    partes = [
-        nombres,
-        apellido_paterno,
-        apellido_materno,
-    ]
-
-    return " ".join(parte for parte in partes if parte).strip()
+    return html.unescape(str(valor or "").strip())
 
 
 def _normalizar_persona(item: dict) -> dict | None:
-    rut = formatear_rut(
-        _obtener(item, "rut", "run", "RUT", "RUN")
-    ) or ""
-
-    nombre = _construir_nombre_persona(item)
+    rut = formatear_rut(item.get("rut", "")) or ""
+    nombre = _texto(item.get("nombre"))
 
     if not rut and not nombre:
         return None
@@ -73,10 +28,10 @@ def _normalizar_persona(item: dict) -> dict | None:
     }
 
 
-def _cargar_personas_api(url: str) -> list[dict]:
+def _cargar_personas_api(url: str, source: str) -> list[dict]:
     personas = []
 
-    for item in consultar_api_get(url):
+    for item in consultar_api_get(url, source=source):
         if not isinstance(item, dict):
             continue
 
@@ -89,11 +44,17 @@ def _cargar_personas_api(url: str) -> list[dict]:
 
 
 def cargar_funcionarios():
-    return _cargar_personas_api(API_FUNCIONARIOS_URL)
+    return _cargar_personas_api(
+        API_FUNCIONARIOS_URL,
+        API_SOURCE_FUNCIONARIOS,
+    )
 
 
 def cargar_usuarios_sistema():
-    return _cargar_personas_api(API_USUARIOS_SISTEMA_URL)
+    return _cargar_personas_api(
+        API_USUARIOS_SISTEMA_URL,
+        API_SOURCE_USUARIOS_SISTEMA,
+    )
 
 
 def cargar_departamentos(path="data/departamentos.json"):
