@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 
 from utils.discos_modelo import extraer_capacidad_gb, separar_disco_principal
-from utils.rut import formatear_rut, validar_rut
 from utils.serial_utils import normalizar_serial
 
 
@@ -22,6 +21,17 @@ def normalizar_codigo_inventario(valor) -> str | None:
 
 def normalizar_identificador(valor) -> str | None:
     return normalizar_serial(valor, min_len=3)
+
+
+def normalizar_id(valor) -> int | None:
+    try:
+        if valor is None or str(valor).strip() == "":
+            return None
+
+        return int(valor)
+
+    except (TypeError, ValueError):
+        return None
 
 
 def extraer_numero_decimal(valor) -> float | None:
@@ -113,6 +123,15 @@ def _tiene_identificador(item: dict) -> bool:
     )
 
 
+def _primer_equipo(payload: dict) -> dict:
+    equipos = payload.get("equipos") or []
+
+    if not equipos:
+        return {}
+
+    return equipos[0] or {}
+
+
 def construir_payload(app) -> dict:
     auto = {
         clave: limpiar_texto(app._get_auto(clave))
@@ -120,6 +139,25 @@ def construir_payload(app) -> dict:
     }
 
     disco_principal, _ = separar_disco_principal(app.discos_fisicos)
+
+    equipo = {
+        "codigo_inventario": normalizar_codigo_inventario(
+            app._get_auto("codigo_inventario")
+        ),
+        "numero_de_serie": normalizar_identificador(auto.get("serial")),
+        "nombre_pc": auto.get("nombre_pc"),
+        "sistema_operativo": auto.get("sistema_operativo"),
+        "procesador": auto.get("cpu"),
+        "ram_gb": normalizar_ram_gb(auto.get("ram")),
+        "tipo_disco_principal": limpiar_texto(
+            str((disco_principal or {}).get("tipo", "")).upper()
+        ),
+        "capacidad_disco_principal_gb": extraer_capacidad_gb(
+            (disco_principal or {}).get("capacidad")
+        ),
+        "ip": auto.get("ip"),
+        "anydesk": auto.get("anydesk"),
+    }
 
     monitores = _limpiar_items(
         app.monitores_vars,
@@ -147,79 +185,78 @@ def construir_payload(app) -> dict:
 
     impresoras = _limpiar_impresoras(impresoras_raw)
 
+    fecha_hora_registro = (
+        app.fecha_hora_envio
+        or datetime.now().strftime("%Y-%m-%d %H:%M")
+    )
+
     observaciones = app.txt_observaciones.get("1.0", "end").strip() or None
 
+    id_funcionario = normalizar_id(
+        getattr(app, "id_funcionario_seleccionado", None)
+    )
+
+    id_departamento = normalizar_id(
+        getattr(app, "id_departamento_seleccionado", None)
+    )
+
+    id_registrador = normalizar_id(
+        getattr(app, "id_registrador_seleccionado", None)
+    )
+
     return {
-        "codigo_inventario_equipo": normalizar_codigo_inventario(
-            app._get_auto("codigo_inventario_equipo")
-        ),
-        "numero_de_serie_equipo": normalizar_identificador(auto.get("serial")),
-
-        "nombre_pc": auto.get("nombre_pc"),
-        "sistema_operativo": auto.get("sistema_operativo"),
-        "procesador": auto.get("cpu"),
-        "ram_gb": normalizar_ram_gb(auto.get("ram")),
-
-        "tipo_disco_principal": limpiar_texto(
-            str((disco_principal or {}).get("tipo", "")).upper()
-        ),
-        "capacidad_disco_principal_gb": extraer_capacidad_gb(
-            (disco_principal or {}).get("capacidad")
-        ),
-
-        "ip": auto.get("ip"),
-        "anydesk": auto.get("anydesk"),
-
-        "nombre_funcionario": limpiar_var(app.var_usuario),
-        "rut_funcionario": formatear_rut(limpiar_var(app.var_rut_funcionario)),
-        "departamento_funcionario": limpiar_var(app.var_departamento_funcionario),
-
-        "nombre_registrador": limpiar_var(app.var_nombre_registrador),
-        "rut_registrador": formatear_rut(limpiar_var(app.var_rut_registrador)),
-
-        "fecha_hora_registro": (
-            app.fecha_hora_envio
-            or datetime.now().strftime("%Y-%m-%d %H:%M")
-        ),
-
+        "equipos": [equipo],
         "monitores": monitores,
         "impresoras": impresoras,
-        "observaciones": observaciones,
+
+        "asignacion": {
+            "id_funcionario": id_funcionario,
+            "id_departamento": id_departamento,
+
+            # Se envían ambos por compatibilidad con backend.
+            # En la BD real corresponde a asignaciones_activo.asignado_por.
+            "id_registrador": id_registrador,
+            "asignado_por": id_registrador,
+
+            "fecha_hora_registro": fecha_hora_registro,
+            "observaciones": observaciones,
+        },
     }
 
 
 def validar_payload(payload: dict) -> tuple[bool, list[str]]:
-    obligatorios = {
+    faltantes = []
+
+    equipo = _primer_equipo(payload)
+    asignacion = payload.get("asignacion") or {}
+
+    obligatorios_equipo = {
         "nombre_pc": "Nombre del PC",
         "sistema_operativo": "Sistema operativo",
         "procesador": "Procesador",
         "ram_gb": "RAM",
-        "nombre_funcionario": "Funcionario responsable",
-        "rut_funcionario": "RUT funcionario",
-        "departamento_funcionario": "Departamento",
-        "nombre_registrador": "Nombre registrador",
-        "rut_registrador": "RUT registrador",
-        "fecha_hora_registro": "Fecha y hora",
     }
 
-    faltantes = []
-
-    for clave, nombre_visible in obligatorios.items():
-        valor = payload.get(clave)
+    for clave, nombre_visible in obligatorios_equipo.items():
+        valor = equipo.get(clave)
 
         if valor is None or valor == "":
             faltantes.append(nombre_visible)
-            
-    if payload.get("rut_funcionario") and not validar_rut(payload.get("rut_funcionario")):
-        faltantes.append("RUT funcionario válido")
 
-    if payload.get("rut_registrador") and not validar_rut(payload.get("rut_registrador")):
-        faltantes.append("RUT registrador válido")
+    obligatorios_asignacion = {
+        "id_funcionario": "Funcionario seleccionado desde la lista",
+        "id_departamento": "Departamento seleccionado desde la lista",
+        "id_registrador": "Registrador seleccionado desde la lista",
+        "fecha_hora_registro": "Fecha y hora",
+    }
 
-    if not (
-        payload.get("codigo_inventario_equipo")
-        or payload.get("numero_de_serie_equipo")
-    ):
+    for clave, nombre_visible in obligatorios_asignacion.items():
+        valor = asignacion.get(clave)
+
+        if valor is None or valor == "":
+            faltantes.append(nombre_visible)
+
+    if not _tiene_identificador(equipo):
         faltantes.append("Equipo: código inventario o N° serie")
 
     for i, monitor in enumerate(payload.get("monitores") or [], start=1):

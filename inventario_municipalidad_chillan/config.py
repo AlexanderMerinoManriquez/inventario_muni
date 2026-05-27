@@ -17,9 +17,11 @@ BANNER_PATH   = os.path.join(BASE_DIR, "assets", "Bannermuni.png")
 # ── API datos municipales ─────────────────────────────────────────────────────
 API_FUNCIONARIOS_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
 API_USUARIOS_SISTEMA_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
+API_DEPARTAMENTOS_URL = ""
 
 API_SOURCE_FUNCIONARIOS = "funcionarios"
 API_SOURCE_USUARIOS_SISTEMA = "usuarios_ti"
+API_SOURCE_DEPARTAMENTOS = "departamentos"
 
 API_DATOS_TIMEOUT = 8
 # ── Campos automáticos ────────────────────────────────────────────────────────
@@ -52,14 +54,6 @@ CAMPOS_IMPRESORA = [
     ("codigo_inventario", "Código inventario:"),
     
 ]
-
-OBLIGATORIOS = {
-    "nombre_funcionario":       "Funcionario responsable",
-    "rut_funcionario":          "RUT funcionario",
-    "departamento_funcionario": "Departamento",
-    "nombre_registrador":       "Nombre registrador",
-    "rut_registrador":          "RUT registrador",
-}
 # ── Paleta institucional ───────────────────────────────────────────────────────
 C = {
     "rojo":              "#C8102E",

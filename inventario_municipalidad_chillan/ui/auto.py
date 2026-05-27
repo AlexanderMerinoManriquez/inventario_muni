@@ -81,7 +81,7 @@ def mostrar_discos_en_auto_frame(app) -> None:
 
     app.discos_widgets.clear()
     app.discos_entries.clear()
-    app.auto_entries.pop("codigo_inventario_equipo", None)
+    app.auto_entries.pop("codigo_inventario", None)
 
     serial_item = app.auto_entries.get("serial")
 
@@ -139,7 +139,7 @@ def mostrar_discos_en_auto_frame(app) -> None:
     entry_codigo.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
     app.discos_widgets.extend([lbl_codigo, entry_codigo])
-    app.auto_entries["codigo_inventario_equipo"] = {
+    app.auto_entries["codigo_inventario"] = {
         "var": var_codigo,
         "entry": entry_codigo,
         "label": lbl_codigo,
@@ -162,5 +162,5 @@ def mostrar_discos_en_auto_frame(app) -> None:
         padx=(10, 10),
         pady=(0, 6),
     )
-
+    
     app.discos_widgets.append(ayuda)

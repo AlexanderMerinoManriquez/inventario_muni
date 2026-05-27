@@ -137,9 +137,12 @@ class BuscadorAutocomplete(tk.Frame):
     # ── Eventos de escritura ───────────────────────────────────────────────────
     def _on_escribir(self):
         """Llamado cada vez que cambia el texto. Marca como no-seleccionado."""
+        if self._seleccionado and self.on_clear:
+            self.on_clear()
+
         self._marcar_seleccionado(False)
         self._filtrar()
- 
+        
     def _filtrar(self):
         valor_original = self.var_buscar.get().strip()
         texto = self._normalizar(valor_original)
@@ -293,36 +296,47 @@ class BuscadorAutocomplete(tk.Frame):
         return False
     # ── Validación al salir ────────────────────────────────────────────────────
     def _validar_al_salir(self):
-        """Si el usuario escribió sin seleccionar, intenta coincidencia exacta antes de limpiar."""
         focus = self.winfo_toplevel().focus_get()
 
         if focus in (self.entry, self.lista):
             return
 
-        if not self.var_buscar.get().strip():
-            return
+        self.validar_o_limpiar()
+    # ── Visibilidad de la lista ────────────────────────────────────────────────
+    def _ocultar_lista(self):
+        self.lista.pack_forget()
+        
+    # ── limpiador ────────────────────────────────────────────────    
+    def validar_o_limpiar(self) -> bool:
+        texto = self.var_buscar.get().strip()
+
+        if not texto:
+            self.variable.set("")
+            self._marcar_seleccionado(False)
+            self._ocultar_lista()
+
+            if self.on_clear:
+                self.on_clear()
+
+            return False
 
         if self._seleccionado:
-            return
-
-        if self._seleccionar_coincidencia_exacta():
-            return
+            return True
 
         if self.permitir_manual:
-            self.variable.set(self.var_buscar.get().strip())
+            self.variable.set(texto)
             self._ocultar_lista()
-            return
+            return True
 
         self.var_buscar.set("")
         self.variable.set("")
+        self._marcar_seleccionado(False)
         self._ocultar_lista()
 
         if self.on_clear:
             self.on_clear()
-    
-    # ── Visibilidad de la lista ────────────────────────────────────────────────
-    def _ocultar_lista(self):
-        self.lista.pack_forget()
+
+        return False
  
     # ── API pública ────────────────────────────────────────────────────────────
     def set_valor_externo(self, valor: str, item: dict = None) -> None:

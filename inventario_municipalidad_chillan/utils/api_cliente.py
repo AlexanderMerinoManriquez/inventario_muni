@@ -23,6 +23,8 @@ def enviar_payload_api(url: str, payload: dict) -> dict:
             timeout=30,
         )
 
+        resp.raise_for_status()
+
     except requests.exceptions.RequestException as e:
         return {
             "ok": False,
@@ -41,16 +43,31 @@ def enviar_payload_api(url: str, payload: dict) -> dict:
             "detalle": resp.text,
         }
 
+    mensaje = (
+        data.get("message")
+        or data.get("mensaje")
+        or "Sin mensaje"
+    )
+
+    datos = (
+        data.get("data")
+        or data.get("datos")
+        or {}
+    )
+
     if data.get("success") is True:
         return {
             "ok": True,
+            "mensaje": mensaje,
             "data": data,
+            "datos": datos,
         }
 
     return {
         "ok": False,
         "tipo": "servidor",
-        "mensaje": data.get("message", "Sin mensaje"),
+        "mensaje": mensaje,
         "detalle": resp.text,
         "data": data,
+        "datos": datos,
     }

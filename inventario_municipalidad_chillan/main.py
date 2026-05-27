@@ -67,6 +67,10 @@ class InventarioApp:
 
         self.var_nombre_registrador = tk.StringVar()
         self.var_rut_registrador = tk.StringVar()
+        
+        self.id_funcionario_seleccionado = None
+        self.id_registrador_seleccionado = None
+        self.id_departamento_seleccionado = None
 
         self.funcionarios_data = cargar_funcionarios() or []
         self.usuarios_sistema_data = cargar_usuarios_sistema() or []
@@ -216,6 +220,7 @@ class InventarioApp:
     def _on_funcionario_seleccionado(self, persona: dict) -> None:
         rut = formatear_rut(persona.get("rut", "")) or ""
 
+        self.id_funcionario_seleccionado = persona.get("id")
         self.var_usuario.set(persona.get("nombre", ""))
         self.var_rut_funcionario.set(rut)
 
@@ -226,20 +231,24 @@ class InventarioApp:
             set_entry_normal(entry)
 
     def _limpiar_funcionario(self) -> None:
+        self.id_funcionario_seleccionado = None
         self.var_rut_funcionario.set("")
         
     def _on_departamento_seleccionado(self, departamento: dict) -> None:
+        self.id_departamento_seleccionado = departamento.get("id")
         self.var_departamento_funcionario.set(departamento.get("nombre", ""))
 
         entry = getattr(getattr(self, "buscador_departamento", None), "entry", None)
         set_entry_normal(entry)
 
     def _limpiar_departamento(self) -> None:
+        self.id_departamento_seleccionado = None
         self.var_departamento_funcionario.set("")
 
     def _on_registrador_seleccionado(self, persona: dict) -> None:
         rut = formatear_rut(persona.get("rut", "")) or ""
 
+        self.id_registrador_seleccionado = persona.get("id")
         self.var_rut_registrador.set(rut)
         self.var_nombre_registrador.set(persona.get("nombre", ""))
 
@@ -255,6 +264,7 @@ class InventarioApp:
             set_entry_normal(entry)
 
     def _limpiar_registrador(self) -> None:
+        self.id_registrador_seleccionado = None
         self.var_nombre_registrador.set("")
 
     # ── Nombre PC ──────────────────────────────────────────────────────────────
@@ -428,6 +438,14 @@ class InventarioApp:
 
     # ── Envío ──────────────────────────────────────────────────────────────────
     def enviar_datos(self) -> None:
+        for buscador in (
+            getattr(self, "buscador_departamento", None),
+            getattr(self, "buscador_funcionario", None),
+            getattr(self, "buscador_registrador", None),
+        ):
+            if buscador:
+                buscador.validar_o_limpiar()
+
         limpiar_validacion_visual(self)
 
         self.fecha_hora_envio = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -506,9 +524,101 @@ class InventarioApp:
         self._set_estado("● Error del servidor", C["rojo"])
 
     def _registro_exitoso(self, respuesta_json: dict) -> None:
+        mensaje = (
+            respuesta_json.get("message")
+            or respuesta_json.get("mensaje")
+            or "Registro guardado correctamente."
+        )
+
+        datos = respuesta_json.get("datos") or respuesta_json.get("data") or {}
+
+        activos = datos.get("activos_procesados") or []
+        asignaciones = datos.get("asignaciones") or []
+        advertencias = datos.get("advertencias") or []
+
+        resumen = f"{mensaje}\n"
+
+        if activos:
+            resumen += "\nActivos procesados:"
+            for activo in activos:
+                if isinstance(activo, dict):
+                    tipo = activo.get("tipo", "ACTIVO")
+                    id_activo = activo.get("id_activo", "")
+                    codigo = activo.get("codigo_inventario")
+                    serie = activo.get("numero_de_serie")
+                    accion = activo.get("accion", "procesado")
+
+                    linea = f"\n- {tipo}: {accion}"
+
+                    if id_activo:
+                        linea += f" | ID activo: {id_activo}"
+
+                    if codigo:
+                        linea += f" | Código: {codigo}"
+
+                    if serie:
+                        linea += f" | Serie: {serie}"
+
+                    resumen += linea
+                else:
+                    resumen += f"\n- {activo}"
+        else:
+            resumen += "\nActivos procesados: 0"
+
+        if asignaciones:
+            resumen += "\n\nAsignaciones procesadas:"
+            for asignacion in asignaciones:
+                if isinstance(asignacion, dict):
+                    tipo = asignacion.get("tipo", "ACTIVO")
+                    id_activo = asignacion.get("id_activo", "")
+                    id_asignacion = asignacion.get("id_asignacion", "")
+
+                    linea = f"\n- {tipo}"
+
+                    if id_activo:
+                        linea += f" | ID activo: {id_activo}"
+
+                    if id_asignacion:
+                        linea += f" | ID asignación: {id_asignacion}"
+
+                    resumen += linea
+                else:
+                    resumen += f"\n- {asignacion}"
+        else:
+            resumen += "\n\nAsignaciones procesadas: 0"
+
+        if advertencias:
+            resumen += "\n\nAdvertencias:"
+            for advertencia in advertencias:
+                if isinstance(advertencia, dict):
+                    tipo = advertencia.get("tipo", "ACTIVO")
+                    mensaje_adv = advertencia.get("mensaje", "Advertencia sin detalle")
+                    id_activo = advertencia.get("id_activo")
+                    indice = advertencia.get("indice")
+
+                    linea = f"\n- {tipo}: {mensaje_adv}"
+
+                    if id_activo:
+                        linea += f" | ID activo: {id_activo}"
+
+                    if indice is not None:
+                        linea += f" | Índice: {indice}"
+
+                    resumen += linea
+                else:
+                    resumen += f"\n- {advertencia}"
+
+        if advertencias:
+            messagebox.showwarning(
+                "Registro con advertencias",
+                resumen,
+            )
+            self._set_estado("● Registrado con advertencias", C["amarillo"])
+            return
+
         messagebox.showinfo(
             "Registro exitoso",
-            f"Equipo registrado correctamente.\n\n{respuesta_json.get('message', '')}",
+            resumen,
         )
 
         self._set_estado("● Registrado correctamente ✓", C["verde"])

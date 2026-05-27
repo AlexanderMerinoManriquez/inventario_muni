@@ -47,18 +47,6 @@ def _mensaje_obligatorios(parent, fila: int, columna: int = 0, columnspan: int =
         pady=(0, 6),
     )
 
-
-def _boton_editar(parent, texto_tooltip: str, command):
-    btn = ttk.Button(
-        parent,
-        text="✎ Editar",
-        style="Edit.TButton",
-        command=command,
-    )
-    Tooltip(btn, texto_tooltip)
-    return btn
-
-
 def build_monitores_frame(app, parent) -> None:
     frame = app._seccion(parent, "Monitores asignados")
 
@@ -193,9 +181,15 @@ def build_manual_frame(app, parent) -> None:
         formato_resultado=lambda d: d.get("nombre", ""),
         on_select=app._on_departamento_seleccionado,
         on_clear=app._limpiar_departamento,
-        permitir_manual=True,
+        permitir_manual=False,
     )
-    app.buscador_departamento.grid(row=0, column=1, sticky="ew", padx=(0, 6), pady=5)
+    app.buscador_departamento.grid(
+        row=0,
+        column=1,
+        sticky="ew",
+        padx=(0, 14),
+        pady=5,
+    )
 
     # ── Funcionario ───────────────────────────────────────────────────────────
     _label_campo(
@@ -216,9 +210,15 @@ def build_manual_frame(app, parent) -> None:
         ),
         on_select=app._on_funcionario_seleccionado,
         on_clear=app._limpiar_funcionario,
-        permitir_manual=True,
+        permitir_manual=False,
     )
-    app.buscador_funcionario.grid(row=1, column=1, sticky="ew", padx=(0, 6), pady=5)
+    app.buscador_funcionario.grid(
+        row=1,
+        column=1,
+        sticky="ew",
+        padx=(0, 14),
+        pady=5,
+    )
 
     # ── RUT funcionario ───────────────────────────────────────────────────────
     app.entry_rut_funcionario = app._campo(
@@ -230,43 +230,12 @@ def build_manual_frame(app, parent) -> None:
         obligatorio=True,
     )
 
-    btn_editar_func = _boton_editar(
-        frame,
-        "Editar RUT del funcionario",
-        lambda: app._habilitar_grupo_generico([
-            app.entry_rut_funcionario,
-        ]),
-    )
-
-    btn_editar_func.grid(
-        row=2,
-        column=2,
-        sticky="ne",
-        padx=(0, 8),
-        pady=5,
-    )
-
     _mensaje_obligatorios(frame, fila=3, columnspan=2)
 
 
 def build_trazabilidad_frame(app, parent) -> None:
     frame = app._seccion(parent, "Datos del registrador")
     frame.columnconfigure(1, weight=1)
-
-    btn_editar_reg = _boton_editar(
-        frame,
-        "Editar nombre del registrador",
-        lambda: app._habilitar_grupo_generico([
-            app.entry_nombre_registrador,
-        ]),
-    )
-    btn_editar_reg.grid(
-        row=2,
-        column=2,
-        sticky="ne",
-        padx=(0, 8),
-        pady=5,
-    )
 
     ttk.Label(
         frame,
@@ -294,6 +263,7 @@ def build_trazabilidad_frame(app, parent) -> None:
         font=("Segoe UI", 10, "bold"),
     ).pack(side="left")
 
+    # ── Registrador ───────────────────────────────────────────────────────────
     _label_campo(
         frame,
         "RUT registrador:",
@@ -310,9 +280,15 @@ def build_trazabilidad_frame(app, parent) -> None:
         formato_resultado=lambda p: f"{p.get('rut', '')} — {p.get('nombre', '')}",
         on_select=app._on_registrador_seleccionado,
         on_clear=app._limpiar_registrador,
-        permitir_manual=True,
+        permitir_manual=False,
     )
-    app.buscador_registrador.grid(row=1, column=1, sticky="ew", padx=(0, 6), pady=5)
+    app.buscador_registrador.grid(
+        row=1,
+        column=1,
+        sticky="ew",
+        padx=(0, 14),
+        pady=5,
+    )
 
     app.entry_nombre_registrador = app._campo(
         frame,
