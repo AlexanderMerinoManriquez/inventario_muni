@@ -38,7 +38,7 @@ def extraer_lista_respuesta(data) -> list:
     if not isinstance(data, dict):
         return []
 
-    for clave in ("data", "datos", "funcionarios", "usuarios", "results", "items"):
+    for clave in ("data", "datos", "funcionarios", "usuarios", "departamentos", "direcciones", "oficinas", "results", "items"):
         valor = data.get(clave)
 
         if isinstance(valor, list):

@@ -58,6 +58,7 @@ def _normalizar_departamento(item: dict) -> dict | None:
         item.get("nombre")
         or item.get("nombre_departamento")
         or item.get("departamento")
+        or item.get("oficina")
     )
 
     if id_departamento is None or not nombre:
@@ -104,7 +105,7 @@ def cargar_departamentos():
     if not API_DEPARTAMENTOS_URL:
         return departamentos
 
-    for item in consultar_api_get(API_DEPARTAMENTOS_URL, source=API_SOURCE_DEPARTAMENTOS):
+    for item in consultar_api_get(API_DEPARTAMENTOS_URL):
         if not isinstance(item, dict):
             continue
 

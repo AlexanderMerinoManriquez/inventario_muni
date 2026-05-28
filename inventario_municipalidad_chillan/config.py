@@ -17,14 +17,14 @@ BANNER_PATH   = os.path.join(BASE_DIR, "assets", "Bannermuni.png")
 # ── API datos municipales ─────────────────────────────────────────────────────
 API_FUNCIONARIOS_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
 API_USUARIOS_SISTEMA_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
-API_DEPARTAMENTOS_URL = ""
+API_DEPARTAMENTOS_URL = "https://www.municipalidadchillan.cl/endPoint/apiDirecciones.php"
 
 API_SOURCE_FUNCIONARIOS = "funcionarios"
 API_SOURCE_USUARIOS_SISTEMA = "usuarios_ti"
 API_SOURCE_DEPARTAMENTOS = "departamentos"
 
 API_DATOS_TIMEOUT = 8
-# ── Campos automáticos ────────────────────────────────────────────────────────
+# ── Campos equipos────────────────────────────────────────────────────────
 CAMPOS_AUTO = [
     ("nombre_pc",         socket.gethostname,   "Nombre PC"),
     ("sistema_operativo", obtener_sistema,       "Sistema operativo"),

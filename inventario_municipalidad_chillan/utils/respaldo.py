@@ -6,6 +6,14 @@ from config import RESPALDOS_DIR
 
 
 def _obtener_nombre_equipo(data: dict) -> str:
+    equipo = data.get("equipo")
+
+    if isinstance(equipo, dict):
+        nombre_pc = equipo.get("nombre_pc")
+
+        if nombre_pc:
+            return str(nombre_pc)
+
     equipos = data.get("equipos") or []
 
     if equipos and isinstance(equipos[0], dict):

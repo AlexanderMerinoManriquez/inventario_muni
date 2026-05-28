@@ -88,13 +88,14 @@ class BuscadorAutocomplete(tk.Frame):
         tabla = str.maketrans("áéíóúÁÉÍÓÚüÜñÑ", "aeiouAEIOUuUnN")
         texto = str(texto or "").translate(tabla).lower()
 
-        return (
-            texto
-            .replace(".", "")
-            .replace("-", "")
-            .replace(" ", "")
-            .strip()
-        )
+        for caracter in (".", "-", "_", "/", "\\", ",", ";", ":"):
+            texto = texto.replace(caracter, " ")
+
+        return " ".join(texto.split())
+
+    def _normalizar_compacto(self, texto: str) -> str:
+        return self._normalizar(texto).replace(" ", "")
+    
     def _formato_default(self, item: dict) -> str:
         rut = str(item.get("rut", "")).strip()
         nombre = str(item.get("nombre", "")).strip()
@@ -162,12 +163,25 @@ class BuscadorAutocomplete(tk.Frame):
             return
  
         palabras = texto.split()
-        coinciden = [
-            item for item in self.datos
-            if all(p in self._normalizar(self._texto_busqueda(item)) for p in palabras)
-        ]
+
+        coinciden = []
+        for item in self.datos:
+            texto_item = self._normalizar(self._texto_busqueda(item))
+            texto_item_compacto = self._normalizar_compacto(self._texto_busqueda(item))
+
+            coincide_por_palabras = all(
+                palabra in texto_item
+                for palabra in palabras
+            )
+
+            coincide_por_rut_o_compacto = self._normalizar_compacto(valor_original) in texto_item_compacto
+
+            if coincide_por_palabras or coincide_por_rut_o_compacto:
+                coinciden.append(item)
+
         empiezan = [
-            item for item in coinciden
+            item
+            for item in coinciden
             if self._normalizar(str(item.get(self.campo_busqueda, ""))).startswith(texto)
         ]
         resto = [item for item in coinciden if item not in empiezan]
@@ -261,39 +275,6 @@ class BuscadorAutocomplete(tk.Frame):
 
         if self.on_select:
             self.on_select(item)
- # ── selector coincidencia ────────────────────────────────────────────────────           
-    def _seleccionar_coincidencia_exacta(self) -> bool:
-        texto = self.var_buscar.get().strip()
-
-        if not texto:
-            return False
-
-        texto_norm = self._normalizar(texto)
-
-        for item in self.datos:
-            valores = [
-                item.get(self.campo_valor, ""),
-                item.get(self.campo_busqueda, ""),
-                *[item.get(c, "") for c in self.campos_extra_busqueda],
-            ]
-
-            for valor in valores:
-                if self._normalizar(valor) == texto_norm:
-                    valor_final = str(item.get(self.campo_valor, "")).strip()
-
-                    self._set_valor_sin_trace(valor_final)
-                    self._ocultar_lista()
-                    self._marcar_seleccionado(True)
-
-                    self.entry.focus_set()
-                    self.entry.icursor(tk.END)
-
-                    if self.on_select:
-                        self.on_select(item)
-
-                    return True
-
-        return False
     # ── Validación al salir ────────────────────────────────────────────────────
     def _validar_al_salir(self):
         focus = self.winfo_toplevel().focus_get()

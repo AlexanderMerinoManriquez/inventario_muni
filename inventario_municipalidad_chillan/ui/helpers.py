@@ -50,7 +50,7 @@ def campo(parent, texto: str, variable: tk.StringVar, fila: int,
         state="readonly" if readonly else "normal",
     )
 
-    entry.grid(row=fila, column=1, sticky="ew", padx=(22, 14), pady=5)
+    entry.grid(row=fila, column=1, sticky="ew", padx=(20, 14), pady=5)
 
     parent.columnconfigure(1, weight=1)
 

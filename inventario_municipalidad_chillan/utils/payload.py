@@ -9,11 +9,6 @@ def limpiar_texto(valor) -> str | None:
     texto = str(valor or "").strip()
     return texto or None
 
-
-def limpiar_var(var) -> str | None:
-    return limpiar_texto(var.get())
-
-
 def normalizar_codigo_inventario(valor) -> str | None:
     texto = str(valor or "").strip().upper()
     return texto or None
@@ -123,13 +118,18 @@ def _tiene_identificador(item: dict) -> bool:
     )
 
 
-def _primer_equipo(payload: dict) -> dict:
+def _obtener_equipo(payload: dict) -> dict:
+    equipo = payload.get("equipo")
+
+    if isinstance(equipo, dict):
+        return equipo
+
     equipos = payload.get("equipos") or []
 
-    if not equipos:
-        return {}
+    if equipos and isinstance(equipos[0], dict):
+        return equipos[0]
 
-    return equipos[0] or {}
+    return {}
 
 
 def construir_payload(app) -> dict:
@@ -140,11 +140,21 @@ def construir_payload(app) -> dict:
 
     disco_principal, _ = separar_disco_principal(app.discos_fisicos)
 
+    codigo_inventario_equipo = normalizar_codigo_inventario(
+        app._get_auto("codigo_inventario")
+    )
+
+    numero_serie_equipo = normalizar_identificador(
+        auto.get("serial")
+    )
+
     equipo = {
-        "codigo_inventario": normalizar_codigo_inventario(
-            app._get_auto("codigo_inventario")
-        ),
-        "numero_de_serie": normalizar_identificador(auto.get("serial")),
+        "codigo_inventario": codigo_inventario_equipo,
+        "numero_de_serie": numero_serie_equipo,
+
+        "codigo_inventario_equipo": codigo_inventario_equipo,
+        "numero_de_serie_equipo": numero_serie_equipo,
+
         "nombre_pc": auto.get("nombre_pc"),
         "sistema_operativo": auto.get("sistema_operativo"),
         "procesador": auto.get("cpu"),
@@ -205,7 +215,7 @@ def construir_payload(app) -> dict:
     )
 
     return {
-        "equipos": [equipo],
+        "equipo": equipo,
         "monitores": monitores,
         "impresoras": impresoras,
 
@@ -213,8 +223,6 @@ def construir_payload(app) -> dict:
             "id_funcionario": id_funcionario,
             "id_departamento": id_departamento,
 
-            # Se envían ambos por compatibilidad con backend.
-            # En la BD real corresponde a asignaciones_activo.asignado_por.
             "id_registrador": id_registrador,
             "asignado_por": id_registrador,
 
@@ -227,7 +235,7 @@ def construir_payload(app) -> dict:
 def validar_payload(payload: dict) -> tuple[bool, list[str]]:
     faltantes = []
 
-    equipo = _primer_equipo(payload)
+    equipo = _obtener_equipo(payload)
     asignacion = payload.get("asignacion") or {}
 
     obligatorios_equipo = {

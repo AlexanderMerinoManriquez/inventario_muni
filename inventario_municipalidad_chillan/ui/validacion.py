@@ -45,18 +45,37 @@ def limpiar_validacion_visual(app) -> None:
                 set_entry_normal(entries.get(clave))
 
 
-def _primer_equipo(payload: dict) -> dict:
+def _obtener_equipo(payload: dict) -> dict:
+    equipo = payload.get("equipo")
+
+    if isinstance(equipo, dict):
+        return equipo
+
     equipos = payload.get("equipos") or []
 
-    if not equipos:
-        return {}
+    if equipos and isinstance(equipos[0], dict):
+        return equipos[0]
 
-    return equipos[0] or {}
+    return {}
 
 
 def marcar_validacion_visual(app, payload: dict) -> None:
     asignacion = payload.get("asignacion") or {}
-    equipo = _primer_equipo(payload)
+    equipo = _obtener_equipo(payload)
+    
+    campos_equipo = {
+        "nombre_pc": "nombre_pc",
+        "sistema_operativo": "sistema_operativo",
+        "procesador": "cpu",
+        "ram_gb": "ram",
+    }
+
+    for campo_payload, clave_auto in campos_equipo.items():
+        if not equipo.get(campo_payload):
+            item = app.auto_entries.get(clave_auto)
+
+            if item:
+                set_entry_error(app, item.get("entry"))
 
     if not asignacion.get("id_funcionario"):
         set_entry_error(app, getattr(app.buscador_funcionario, "entry", None))
