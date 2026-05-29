@@ -5,8 +5,6 @@ from utils.discos_modelo import extraer_capacidad_gb, separar_disco_principal
 from utils.serial_utils import normalizar_serial
 
 
-# ── Helpers de normalización ───────────────────────────────────────────────────
-
 def limpiar_texto(valor) -> str | None:
     texto = str(valor or "").strip()
     return texto or None
@@ -25,7 +23,9 @@ def normalizar_id(valor) -> int | None:
     try:
         if valor is None or str(valor).strip() == "":
             return None
+
         return int(valor)
+
     except (TypeError, ValueError):
         return None
 
@@ -33,20 +33,22 @@ def normalizar_id(valor) -> int | None:
 def extraer_numero_decimal(valor) -> float | None:
     texto = str(valor or "").upper().replace(",", ".")
     match = re.search(r"\d+(?:\.\d+)?", texto)
+
     if not match:
         return None
+
     return float(match.group())
 
 
 def normalizar_ram_gb(valor) -> float | None:
     ram = extraer_numero_decimal(valor)
+
     if ram is None:
         return None
+
     valores_ram = [2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 256]
     return float(min(valores_ram, key=lambda x: abs(x - ram)))
 
-
-# ── Limpieza de listas de activos ──────────────────────────────────────────────
 
 def _limpiar_items(vars_lista: list[dict], campos: tuple[str, ...]) -> list[dict]:
     items = []
@@ -60,8 +62,10 @@ def _limpiar_items(vars_lista: list[dict], campos: tuple[str, ...]) -> list[dict
 
             if campo == "codigo_inventario":
                 valor = normalizar_codigo_inventario(valor)
+
             elif campo == "numero_de_serie":
                 valor = normalizar_identificador(valor)
+
             elif campo == "pulgadas":
                 valor = extraer_numero_decimal(valor)
 
@@ -78,23 +82,30 @@ def _limpiar_impresoras(impresoras: list[dict]) -> list[dict]:
 
     for impresora in impresoras:
         tipo = (impresora.get("tipo") or "").strip().lower()
+
         es_no_detectada = tipo == "no detectada"
         tiene_datos_reales = any(
             impresora.get(campo)
-            for campo in ("marca", "modelo", "ip", "toner_tinta",
-                          "codigo_inventario", "numero_de_serie")
+            for campo in (
+                "marca",
+                "modelo",
+                "ip",
+                "toner_tinta",
+                "codigo_inventario",
+                "numero_de_serie",
+            )
         )
 
         if es_no_detectada and not tiene_datos_reales:
             continue
 
         resultado.append({
-            "tipo_impresora":    impresora.get("tipo"),
-            "marca":             impresora.get("marca"),
-            "modelo":            impresora.get("modelo"),
-            "ip":                impresora.get("ip"),
-            "toner_tinta":       impresora.get("toner_tinta"),
-            "numero_de_serie":   impresora.get("numero_de_serie"),
+            "tipo_impresora": impresora.get("tipo"),
+            "marca": impresora.get("marca"),
+            "modelo": impresora.get("modelo"),
+            "ip": impresora.get("ip"),
+            "toner_tinta": impresora.get("toner_tinta"),
+            "numero_de_serie": impresora.get("numero_de_serie"),
             "codigo_inventario": impresora.get("codigo_inventario"),
         })
 
@@ -102,20 +113,27 @@ def _limpiar_impresoras(impresoras: list[dict]) -> list[dict]:
 
 
 def _tiene_identificador(item: dict) -> bool:
-    return bool(item.get("codigo_inventario") or item.get("numero_de_serie"))
+    return bool(
+        item.get("codigo_inventario")
+        or item.get("numero_de_serie")
+    )
+
+
+def _tiene_identificador_equipo(equipo: dict) -> bool:
+    return bool(
+        equipo.get("codigo_inventario_equipo")
+        or equipo.get("numero_de_serie_equipo")
+    )
 
 
 def _obtener_equipo(payload: dict) -> dict:
     equipo = payload.get("equipo")
+
     if isinstance(equipo, dict):
         return equipo
-    equipos = payload.get("equipos") or []
-    if equipos and isinstance(equipos[0], dict):
-        return equipos[0]
+
     return {}
 
-
-# ── Construcción del payload ───────────────────────────────────────────────────
 
 def construir_payload(app) -> dict:
     auto = {
@@ -134,33 +152,47 @@ def construir_payload(app) -> dict:
     )
 
     equipo = {
-        "codigo_inventario": codigo_inventario_equipo,
-        "numero_de_serie":   numero_serie_equipo,
+        "codigo_inventario_equipo": codigo_inventario_equipo,
+        "numero_de_serie_equipo": numero_serie_equipo,
 
-        "nombre_pc":                    auto.get("nombre_pc"),
-        "sistema_operativo":            auto.get("sistema_operativo"),
-        "procesador":                   auto.get("cpu"),
-        "ram_gb":                       normalizar_ram_gb(auto.get("ram")),
-        "tipo_disco_principal":         limpiar_texto(
+        "nombre_pc": auto.get("nombre_pc"),
+        "sistema_operativo": auto.get("sistema_operativo"),
+        "procesador": auto.get("cpu"),
+        "ram_gb": normalizar_ram_gb(auto.get("ram")),
+        "tipo_disco_principal": limpiar_texto(
             str((disco_principal or {}).get("tipo", "")).upper()
         ),
         "capacidad_disco_principal_gb": extraer_capacidad_gb(
             (disco_principal or {}).get("capacidad")
         ),
-        "ip":      auto.get("ip"),
+        "ip": auto.get("ip"),
         "anydesk": auto.get("anydesk"),
     }
 
     monitores = _limpiar_items(
         app.monitores_vars,
-        ("marca", "modelo", "pulgadas", "numero_de_serie", "codigo_inventario"),
+        (
+            "marca",
+            "modelo",
+            "pulgadas",
+            "numero_de_serie",
+            "codigo_inventario",
+        ),
     )
 
     impresoras_raw = _limpiar_items(
         app.impresoras_vars,
-        ("tipo", "marca", "modelo", "ip", "toner_tinta",
-         "numero_de_serie", "codigo_inventario"),
+        (
+            "tipo",
+            "marca",
+            "modelo",
+            "ip",
+            "toner_tinta",
+            "numero_de_serie",
+            "codigo_inventario",
+        ),
     )
+
     impresoras = _limpiar_impresoras(impresoras_raw)
 
     fecha_hora_registro = (
@@ -170,61 +202,66 @@ def construir_payload(app) -> dict:
 
     observaciones = app.txt_observaciones.get("1.0", "end").strip() or None
 
-    id_funcionario  = normalizar_id(getattr(app, "id_funcionario_seleccionado",  None))
-    id_departamento = normalizar_id(getattr(app, "id_departamento_seleccionado", None))
-    id_registrador  = normalizar_id(getattr(app, "id_registrador_seleccionado",  None))
+    id_funcionario = normalizar_id(
+        getattr(app, "id_funcionario_seleccionado", None)
+    )
+
+    departamento_id = normalizar_id(
+        getattr(app, "id_departamento_seleccionado", None)
+    )
+
+    id_registrador = normalizar_id(
+        getattr(app, "id_registrador_seleccionado", None)
+    )
 
     return {
         "equipo": equipo,
-        "monitores":  monitores,
+        "monitores": monitores,
         "impresoras": impresoras,
 
         "asignacion": {
-            "id_funcionario":  id_funcionario,
-
-            "id_departamento": id_departamento,
-            "departamento_id": id_departamento,
-
+            "id_funcionario": id_funcionario,
             "id_registrador": id_registrador,
-            "asignado_por":   id_registrador,
-
+            "departamento_id": departamento_id,
             "fecha_hora_registro": fecha_hora_registro,
-            "observaciones":       observaciones,
+            "observaciones": observaciones,
         },
     }
 
 
-# ── Validación del payload antes de enviar ────────────────────────────────────
-
 def validar_payload(payload: dict) -> tuple[bool, list[str]]:
     faltantes = []
 
-    equipo    = _obtener_equipo(payload)
+    equipo = _obtener_equipo(payload)
     asignacion = payload.get("asignacion") or {}
 
     obligatorios_equipo = {
-        "nombre_pc":        "Nombre del PC",
+        "nombre_pc": "Nombre del PC",
         "sistema_operativo": "Sistema operativo",
-        "procesador":       "Procesador",
-        "ram_gb":           "RAM",
+        "procesador": "Procesador",
+        "ram_gb": "RAM",
     }
 
     for clave, nombre_visible in obligatorios_equipo.items():
-        if not equipo.get(clave):
+        valor = equipo.get(clave)
+
+        if valor is None or valor == "":
             faltantes.append(nombre_visible)
 
     obligatorios_asignacion = {
-        "id_funcionario":      "Funcionario seleccionado desde la lista",
-        "id_departamento":     "Departamento seleccionado desde la lista",
-        "id_registrador":      "Registrador seleccionado desde la lista",
+        "id_funcionario": "Funcionario seleccionado desde la lista",
+        "departamento_id": "Departamento seleccionado desde la lista",
+        "id_registrador": "Registrador seleccionado desde la lista",
         "fecha_hora_registro": "Fecha y hora",
     }
 
     for clave, nombre_visible in obligatorios_asignacion.items():
-        if not asignacion.get(clave):
+        valor = asignacion.get(clave)
+
+        if valor is None or valor == "":
             faltantes.append(nombre_visible)
 
-    if not _tiene_identificador(equipo):
+    if not _tiene_identificador_equipo(equipo):
         faltantes.append("Equipo: código inventario o N° serie")
 
     for i, monitor in enumerate(payload.get("monitores") or [], start=1):

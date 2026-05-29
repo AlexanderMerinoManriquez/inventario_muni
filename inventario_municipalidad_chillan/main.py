@@ -451,6 +451,11 @@ class InventarioApp:
         self.fecha_hora_envio = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         payload = construir_payload(self)
+        import json
+        messagebox.showinfo(
+            "DEBUG payload",
+            json.dumps(payload, ensure_ascii=False, indent=4)
+        )
         ok, faltantes = validar_payload(payload)
 
         marcar_validacion_visual(self, payload)

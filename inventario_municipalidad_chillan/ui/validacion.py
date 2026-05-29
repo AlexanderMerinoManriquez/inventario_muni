@@ -51,18 +51,14 @@ def _obtener_equipo(payload: dict) -> dict:
     if isinstance(equipo, dict):
         return equipo
 
-    equipos = payload.get("equipos") or []
-
-    if equipos and isinstance(equipos[0], dict):
-        return equipos[0]
-
     return {}
 
 
 def marcar_validacion_visual(app, payload: dict) -> None:
     asignacion = payload.get("asignacion") or {}
     equipo = _obtener_equipo(payload)
-    
+
+    # ── Campos automáticos obligatorios del equipo ────────────────────────────
     campos_equipo = {
         "nombre_pc": "nombre_pc",
         "sistema_operativo": "sistema_operativo",
@@ -77,20 +73,22 @@ def marcar_validacion_visual(app, payload: dict) -> None:
             if item:
                 set_entry_error(app, item.get("entry"))
 
+    # ── Asignación ────────────────────────────────────────────────────────────
     if not asignacion.get("id_funcionario"):
         set_entry_error(app, getattr(app.buscador_funcionario, "entry", None))
         set_entry_error(app, getattr(app, "entry_rut_funcionario", None))
 
-    if not asignacion.get("id_departamento"):
+    if not asignacion.get("departamento_id"):
         set_entry_error(app, getattr(app.buscador_departamento, "entry", None))
 
     if not asignacion.get("id_registrador"):
         set_entry_error(app, getattr(app.buscador_registrador, "entry", None))
         set_entry_error(app, getattr(app, "entry_nombre_registrador", None))
 
+    # ── Identificador del equipo ──────────────────────────────────────────────
     if not (
-        equipo.get("numero_de_serie")
-        or equipo.get("codigo_inventario")
+        equipo.get("numero_de_serie_equipo")
+        or equipo.get("codigo_inventario_equipo")
     ):
         for clave in ("serial", "codigo_inventario"):
             item = app.auto_entries.get(clave)
@@ -98,6 +96,7 @@ def marcar_validacion_visual(app, payload: dict) -> None:
             if item:
                 set_entry_error(app, item.get("entry"))
 
+    # ── Identificador de monitores ────────────────────────────────────────────
     for i, monitor in enumerate(payload.get("monitores") or []):
         if monitor.get("numero_de_serie") or monitor.get("codigo_inventario"):
             continue
@@ -107,6 +106,7 @@ def marcar_validacion_visual(app, payload: dict) -> None:
             set_entry_error(app, entries.get("numero_de_serie"))
             set_entry_error(app, entries.get("codigo_inventario"))
 
+    # ── Identificador de impresoras ───────────────────────────────────────────
     for i, impresora in enumerate(payload.get("impresoras") or []):
         if impresora.get("numero_de_serie") or impresora.get("codigo_inventario"):
             continue
