@@ -23,9 +23,7 @@ def normalizar_id(valor) -> int | None:
     try:
         if valor is None or str(valor).strip() == "":
             return None
-
         return int(valor)
-
     except (TypeError, ValueError):
         return None
 
@@ -33,39 +31,31 @@ def normalizar_id(valor) -> int | None:
 def extraer_numero_decimal(valor) -> float | None:
     texto = str(valor or "").upper().replace(",", ".")
     match = re.search(r"\d+(?:\.\d+)?", texto)
-
     if not match:
         return None
-
     return float(match.group())
 
 
 def normalizar_ram_gb(valor) -> float | None:
     ram = extraer_numero_decimal(valor)
-
     if ram is None:
         return None
-
     valores_ram = [2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 256]
     return float(min(valores_ram, key=lambda x: abs(x - ram)))
 
 
 def _limpiar_items(vars_lista: list[dict], campos: tuple[str, ...]) -> list[dict]:
     items = []
-
     for item in vars_lista:
         fila = {}
-
         for campo in campos:
             var = item.get(campo)
             valor = limpiar_texto(var.get()) if var else None
 
             if campo == "codigo_inventario":
                 valor = normalizar_codigo_inventario(valor)
-
             elif campo == "numero_de_serie":
                 valor = normalizar_identificador(valor)
-
             elif campo == "pulgadas":
                 valor = extraer_numero_decimal(valor)
 
@@ -73,32 +63,20 @@ def _limpiar_items(vars_lista: list[dict], campos: tuple[str, ...]) -> list[dict
 
         if any(fila.values()):
             items.append(fila)
-
     return items
 
 
 def _limpiar_impresoras(impresoras: list[dict]) -> list[dict]:
     resultado = []
-
     for impresora in impresoras:
         tipo = (impresora.get("tipo") or "").strip().lower()
-
         es_no_detectada = tipo == "no detectada"
         tiene_datos_reales = any(
             impresora.get(campo)
-            for campo in (
-                "marca",
-                "modelo",
-                "ip",
-                "toner_tinta",
-                "codigo_inventario",
-                "numero_de_serie",
-            )
+            for campo in ("marca", "modelo", "ip", "toner_tinta", "codigo_inventario", "numero_de_serie")
         )
-
         if es_no_detectada and not tiene_datos_reales:
             continue
-
         resultado.append({
             "tipo_impresora": impresora.get("tipo"),
             "marca": impresora.get("marca"),
@@ -108,31 +86,16 @@ def _limpiar_impresoras(impresoras: list[dict]) -> list[dict]:
             "numero_de_serie": impresora.get("numero_de_serie"),
             "codigo_inventario": impresora.get("codigo_inventario"),
         })
-
     return resultado
 
 
-def _tiene_identificador(item: dict) -> bool:
-    return bool(
-        item.get("codigo_inventario")
-        or item.get("numero_de_serie")
-    )
+def _tiene_serie(item: dict) -> bool:
+    """Solo el N° de serie es obligatorio ahora."""
+    return bool(item.get("numero_de_serie"))
 
 
-def _tiene_identificador_equipo(equipo: dict) -> bool:
-    return bool(
-        equipo.get("codigo_inventario_equipo")
-        or equipo.get("numero_de_serie_equipo")
-    )
-
-
-def _obtener_equipo(payload: dict) -> dict:
-    equipo = payload.get("equipo")
-
-    if isinstance(equipo, dict):
-        return equipo
-
-    return {}
+def _tiene_serie_equipo(equipo: dict) -> bool:
+    return bool(equipo.get("numero_de_serie_equipo"))
 
 
 def construir_payload(app) -> dict:
@@ -143,17 +106,9 @@ def construir_payload(app) -> dict:
 
     disco_principal, _ = separar_disco_principal(app.discos_fisicos)
 
-    codigo_inventario_equipo = normalizar_codigo_inventario(
-        app._get_auto("codigo_inventario")
-    )
-
-    numero_serie_equipo = normalizar_identificador(
-        app._get_auto("serial")
-    )
-
     equipo = {
-        "codigo_inventario_equipo": codigo_inventario_equipo,
-        "numero_de_serie_equipo": numero_serie_equipo,
+        "codigo_inventario_equipo": normalizar_codigo_inventario(app._get_auto("codigo_inventario")),
+        "numero_de_serie_equipo": normalizar_identificador(app._get_auto("serial")),
 
         "nombre_pc": auto.get("nombre_pc"),
         "sistema_operativo": auto.get("sistema_operativo"),
@@ -171,26 +126,12 @@ def construir_payload(app) -> dict:
 
     monitores = _limpiar_items(
         app.monitores_vars,
-        (
-            "marca",
-            "modelo",
-            "pulgadas",
-            "numero_de_serie",
-            "codigo_inventario",
-        ),
+        ("marca", "modelo", "pulgadas", "numero_de_serie", "codigo_inventario"),
     )
 
     impresoras_raw = _limpiar_items(
         app.impresoras_vars,
-        (
-            "tipo",
-            "marca",
-            "modelo",
-            "ip",
-            "toner_tinta",
-            "numero_de_serie",
-            "codigo_inventario",
-        ),
+        ("tipo", "marca", "modelo", "ip", "toner_tinta", "numero_de_serie", "codigo_inventario"),
     )
 
     impresoras = _limpiar_impresoras(impresoras_raw)
@@ -202,27 +143,14 @@ def construir_payload(app) -> dict:
 
     observaciones = app.txt_observaciones.get("1.0", "end").strip() or None
 
-    id_funcionario = normalizar_id(
-        getattr(app, "id_funcionario_seleccionado", None)
-    )
-
-    departamento_id = normalizar_id(
-        getattr(app, "id_departamento_seleccionado", None)
-    )
-
-    id_registrador = normalizar_id(
-        getattr(app, "id_registrador_seleccionado", None)
-    )
-
     return {
         "equipo": equipo,
         "monitores": monitores,
         "impresoras": impresoras,
-
         "asignacion": {
-            "id_funcionario": id_funcionario,
-            "id_registrador": id_registrador,
-            "departamento_id": departamento_id,
+            "id_funcionario": normalizar_id(getattr(app, "id_funcionario_seleccionado", None)),
+            "id_registrador": normalizar_id(getattr(app, "id_registrador_seleccionado", None)),
+            "departamento_id": normalizar_id(getattr(app, "id_departamento_seleccionado", None)),
             "fecha_hora_registro": fecha_hora_registro,
             "observaciones": observaciones,
         },
@@ -232,7 +160,7 @@ def construir_payload(app) -> dict:
 def validar_payload(payload: dict) -> tuple[bool, list[str]]:
     faltantes = []
 
-    equipo = _obtener_equipo(payload)
+    equipo = payload.get("equipo") or {}
     asignacion = payload.get("asignacion") or {}
 
     obligatorios_equipo = {
@@ -241,11 +169,8 @@ def validar_payload(payload: dict) -> tuple[bool, list[str]]:
         "procesador": "Procesador",
         "ram_gb": "RAM",
     }
-
     for clave, nombre_visible in obligatorios_equipo.items():
-        valor = equipo.get(clave)
-
-        if valor is None or valor == "":
+        if not equipo.get(clave):
             faltantes.append(nombre_visible)
 
     obligatorios_asignacion = {
@@ -254,22 +179,19 @@ def validar_payload(payload: dict) -> tuple[bool, list[str]]:
         "id_registrador": "Registrador seleccionado desde la lista",
         "fecha_hora_registro": "Fecha y hora",
     }
-
     for clave, nombre_visible in obligatorios_asignacion.items():
-        valor = asignacion.get(clave)
-
-        if valor is None or valor == "":
+        if not asignacion.get(clave):
             faltantes.append(nombre_visible)
 
-    if not _tiene_identificador_equipo(equipo):
-        faltantes.append("Equipo: código inventario o N° serie")
+    if not _tiene_serie_equipo(equipo):
+        faltantes.append("Equipo: N° de serie (obligatorio)")
 
     for i, monitor in enumerate(payload.get("monitores") or [], start=1):
-        if not _tiene_identificador(monitor):
-            faltantes.append(f"Monitor {i}: código inventario o N° serie")
+        if not _tiene_serie(monitor):
+            faltantes.append(f"Monitor {i}: N° de serie (obligatorio)")
 
     for i, impresora in enumerate(payload.get("impresoras") or [], start=1):
-        if not _tiene_identificador(impresora):
-            faltantes.append(f"Impresora {i}: código inventario o N° serie")
+        if not _tiene_serie(impresora):
+            faltantes.append(f"Impresora {i}: N° de serie (obligatorio)")
 
     return not faltantes, faltantes

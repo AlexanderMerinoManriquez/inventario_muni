@@ -10,13 +10,7 @@ def configurar_estilo() -> None:
     except Exception:
         pass
 
-    s.configure(
-        ".",
-        background=C["gris_bg"],
-        foreground=C["texto"],
-        font=("Segoe UI", 10),
-    )
-
+    s.configure(".", background=C["gris_bg"], foreground=C["texto"], font=("Segoe UI", 10))
     s.configure("TFrame", background=C["gris_bg"])
     s.configure("TLabel", background=C["gris_bg"], foreground=C["texto"])
 
@@ -27,7 +21,6 @@ def configurar_estilo() -> None:
         relief="solid",
         borderwidth=1,
     )
-
     s.configure(
         "Section.TLabelframe.Label",
         background=C["gris_bg"],
@@ -42,13 +35,12 @@ def configurar_estilo() -> None:
         padding=6,
         relief="flat",
     )
-
     s.map(
         "TEntry",
         bordercolor=[("focus", C["rojo"]), ("!focus", C["gris_borde"])],
-        fieldbackground=[("readonly", C["gris_readonly"]),("!readonly", C["blanco"])],
+        fieldbackground=[("readonly", C["gris_readonly"]), ("!readonly", C["blanco"])],
     )
-    
+
     s.configure(
         "Error.TEntry",
         fieldbackground="#fff1f2",
@@ -57,17 +49,10 @@ def configurar_estilo() -> None:
         padding=6,
         relief="flat",
     )
-
     s.map(
         "Error.TEntry",
-        bordercolor=[
-            ("focus", C["rojo"]),
-            ("!focus", C["rojo"]),
-        ],
-        fieldbackground=[
-            ("readonly", "#fff1f2"),
-            ("!readonly", "#fff1f2"),
-        ],
+        bordercolor=[("focus", C["rojo"]), ("!focus", C["rojo"])],
+        fieldbackground=[("readonly", "#fff1f2"), ("!readonly", "#fff1f2")],
     )
 
     s.configure(
@@ -79,18 +64,10 @@ def configurar_estilo() -> None:
         borderwidth=0,
         relief="flat",
     )
-
     s.map(
         "Primary.TButton",
-        background=[
-            ("active", C["rojo_hover"]),
-            ("pressed", C["rojo_dark"]),
-            ("disabled", C["gris_borde"]),
-        ],
-        foreground=[
-            ("active", C["blanco"]),
-            ("disabled", C["gris_sub"]),
-        ],
+        background=[("active", C["rojo_hover"]), ("pressed", C["rojo_dark"]), ("disabled", C["gris_borde"])],
+        foreground=[("active", C["blanco"]), ("disabled", C["gris_sub"])],
     )
 
     s.configure(
@@ -102,12 +79,7 @@ def configurar_estilo() -> None:
         borderwidth=0,
         relief="flat",
     )
-
-    s.map(
-        "Danger.TButton",
-        background=[("active", "#f9cdd4")],
-        foreground=[("active", C["rojo_dark"])],
-    )
+    s.map("Danger.TButton", background=[("active", "#f9cdd4")], foreground=[("active", C["rojo_dark"])])
 
     s.configure(
         "TButton",
@@ -119,11 +91,7 @@ def configurar_estilo() -> None:
         borderwidth=1,
         relief="flat",
     )
-
-    s.map(
-        "TButton",
-        background=[("active", "#d8e2ef")],
-    )
+    s.map("TButton", background=[("active", "#d8e2ef")])
 
     s.configure(
         "Small.TButton",
@@ -135,11 +103,7 @@ def configurar_estilo() -> None:
         borderwidth=1,
         relief="flat",
     )
-
-    s.map(
-        "Small.TButton",
-        background=[("active", "#d8e2ef")],
-    )
+    s.map("Small.TButton", background=[("active", "#d8e2ef")])
 
     s.configure(
         "Edit.TButton",
@@ -151,13 +115,8 @@ def configurar_estilo() -> None:
         borderwidth=1,
         relief="flat",
     )
+    s.map("Edit.TButton", background=[("active", "#dbeafe")], foreground=[("active", "#1e40af")])
 
-    s.map(
-        "Edit.TButton",
-        background=[("active", "#dbeafe")],
-        foreground=[("active", "#1e40af")],
-    )
-    
     s.configure(
         "Add.TButton",
         font=("Segoe UI", 9, "bold"),
@@ -168,12 +127,7 @@ def configurar_estilo() -> None:
         borderwidth=1,
         relief="flat",
     )
-
-    s.map(
-        "Add.TButton",
-        background=[("active", "#d8f3e1")],
-        foreground=[("active", "#0f5c2b")],
-    )
+    s.map("Add.TButton", background=[("active", "#d8f3e1")], foreground=[("active", "#0f5c2b")])
 
     s.configure(
         "Remove.TButton",
@@ -185,12 +139,7 @@ def configurar_estilo() -> None:
         borderwidth=1,
         relief="flat",
     )
-
-    s.map(
-        "Remove.TButton",
-        background=[("active", "#f9cdd4")],
-        foreground=[("active", C["rojo_dark"])],
-    )
+    s.map("Remove.TButton", background=[("active", "#f9cdd4")], foreground=[("active", C["rojo_dark"])])
 
     s.configure(
         "Vertical.TScrollbar",
@@ -200,8 +149,4 @@ def configurar_estilo() -> None:
         arrowsize=12,
         relief="flat",
     )
-
-    s.map(
-        "Vertical.TScrollbar",
-        background=[("active", C["gris_borde"])],
-    )
+    s.map("Vertical.TScrollbar", background=[("active", C["gris_borde"])])

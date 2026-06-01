@@ -7,12 +7,7 @@ from utils.formato import formatear_capacidad
 
 
 def build_auto_frame(app, parent) -> None:
-    frame = app._seccion(
-        parent,
-        "Equipo asignado",
-        fill="both",
-        expand=False,
-    )
+    frame = app._seccion(parent, "Equipo asignado", fill="both", expand=False)
     app.auto_frame = frame
 
     for fila, (clave, texto) in enumerate(app.AUTO_FIELDS):
@@ -30,11 +25,7 @@ def build_auto_frame(app, parent) -> None:
         entry = ttk.Entry(frame, textvariable=var, width=34, state="readonly")
         entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
-        app.auto_entries[clave] = {
-            "var": var,
-            "entry": entry,
-            "label": label_frame,
-        }
+        app.auto_entries[clave] = {"var": var, "entry": entry, "label": label_frame}
 
     app.fila_discos_inicio = len(app.AUTO_FIELDS)
 
@@ -44,34 +35,41 @@ def build_auto_frame(app, parent) -> None:
         style="Edit.TButton",
         command=app._editar_bloque_automatico,
     ).grid(
-        row=0,
-        column=2,
+        row=0, column=2,
         rowspan=max(1, len(app.AUTO_FIELDS)),
-        padx=(4, 8),
-        pady=4,
-        sticky="n",
+        padx=(4, 8), pady=4, sticky="n",
     )
 
     frame.columnconfigure(1, weight=1)
 
 
-def _crear_label_identificador_auto(parent, texto: str) -> ttk.Frame:
+def _label_serie_obligatorio(parent, texto: str) -> ttk.Frame:
+    """Label con ★ rojo para el campo de N° serie (obligatorio)."""
     cont = ttk.Frame(parent)
-
     ttk.Label(
         cont,
         text=texto,
         foreground=C["texto"],
         font=("Segoe UI", 9, "bold"),
     ).pack(side="left")
-
     ttk.Label(
         cont,
         text=" ★",
-        foreground=C["gris_sub"],
+        foreground=C["rojo"],
         font=("Segoe UI", 9, "bold"),
     ).pack(side="left")
+    return cont
 
+
+def _label_opcional(parent, texto: str) -> ttk.Frame:
+    """Label estándar para campo opcional."""
+    cont = ttk.Frame(parent)
+    ttk.Label(
+        cont,
+        text=texto,
+        foreground=C["label_claro"],
+        font=("Segoe UI", 9),
+    ).pack(side="left")
     return cont
 
 
@@ -84,25 +82,20 @@ def mostrar_discos_en_auto_frame(app) -> None:
     app.auto_entries.pop("codigo_inventario", None)
 
     serial_item = app.auto_entries.get("serial")
-
     if serial_item:
         serial_item["label"].grid_forget()
         serial_item["entry"].grid_forget()
 
     fila = app.fila_discos_inicio
-    disco = obtener_disco_principal(app.discos_fisicos)
 
+    # ── Disco principal ───────────────────────────────────────────────────────
+    disco = obtener_disco_principal(app.discos_fisicos)
     if disco:
         tipo = str(disco.get("tipo", "") or "Disco").strip()
         capacidad = formatear_capacidad(str(disco.get("capacidad", "") or "").strip())
 
         if capacidad:
-            lbl_disco = ttk.Label(
-                app.auto_frame,
-                text=f"{tipo}:",
-                foreground=C["gris_sub"],
-                font=("Segoe UI", 9),
-            )
+            lbl_disco = _label_opcional(app.auto_frame, f"{tipo}:")
             lbl_disco.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
             entry_disco = ttk.Entry(app.auto_frame, width=34, state="normal")
@@ -112,30 +105,23 @@ def mostrar_discos_en_auto_frame(app) -> None:
 
             app.discos_widgets.extend([lbl_disco, entry_disco])
             app.discos_entries.append(entry_disco)
-
             fila += 1
 
+    # ── N° Serie (obligatorio) ────────────────────────────────────────────────
     if serial_item:
-        lbl_serial = _crear_label_identificador_auto(app.auto_frame, "N° Serie:")
+        lbl_serial = _label_serie_obligatorio(app.auto_frame, "N° Serie:")
         lbl_serial.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
-
         serial_item["entry"].grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
         serial_item["label"] = lbl_serial
-
         app.discos_widgets.append(lbl_serial)
-
         fila += 1
 
-    lbl_codigo = _crear_label_identificador_auto(app.auto_frame, "Código inventario:")
+    # ── Código inventario (opcional) ──────────────────────────────────────────
+    lbl_codigo = _label_opcional(app.auto_frame, "Código inventario:")
     lbl_codigo.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
     var_codigo = tk.StringVar(value="")
-    entry_codigo = ttk.Entry(
-        app.auto_frame,
-        textvariable=var_codigo,
-        width=34,
-        state="readonly",
-    )
+    entry_codigo = ttk.Entry(app.auto_frame, textvariable=var_codigo, width=34, state="readonly")
     entry_codigo.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
     app.discos_widgets.extend([lbl_codigo, entry_codigo])
@@ -144,23 +130,17 @@ def mostrar_discos_en_auto_frame(app) -> None:
         "entry": entry_codigo,
         "label": lbl_codigo,
     }
-
     fila += 1
 
     ayuda = ttk.Label(
         app.auto_frame,
-        text="★ Completa al menos uno de estos dos campos: N° serie o Código inventario.",
-        foreground=C["gris_sub"],
+        text="★ N° de serie obligatorio. Código inventario opcional.",
+        foreground=C["rojo"],
         font=("Segoe UI", 8, "italic"),
         background=C["gris_panel"],
     )
     ayuda.grid(
-        row=fila,
-        column=0,
-        columnspan=2,
-        sticky="w",
-        padx=(10, 10),
-        pady=(0, 6),
+        row=fila, column=0, columnspan=2,
+        sticky="w", padx=(10, 10), pady=(0, 6),
     )
-    
     app.discos_widgets.append(ayuda)

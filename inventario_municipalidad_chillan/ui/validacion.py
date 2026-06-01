@@ -33,43 +33,30 @@ def limpiar_validacion_visual(app) -> None:
 
     for clave in ("serial", "codigo_inventario"):
         item = app.auto_entries.get(clave)
-
         if item:
             set_entry_normal(item.get("entry"))
 
     for lista in (app.monitores_vars, app.impresoras_vars):
         for item in lista:
             entries = item.get("entries", {})
-
             for clave in ("numero_de_serie", "codigo_inventario"):
                 set_entry_normal(entries.get(clave))
 
 
-def _obtener_equipo(payload: dict) -> dict:
-    equipo = payload.get("equipo")
-
-    if isinstance(equipo, dict):
-        return equipo
-
-    return {}
-
-
 def marcar_validacion_visual(app, payload: dict) -> None:
+    equipo = payload.get("equipo") or {}
     asignacion = payload.get("asignacion") or {}
-    equipo = _obtener_equipo(payload)
 
-    # ── Campos automáticos obligatorios del equipo ────────────────────────────
+    # ── Campos automáticos obligatorios ──────────────────────────────────────
     campos_equipo = {
         "nombre_pc": "nombre_pc",
         "sistema_operativo": "sistema_operativo",
         "procesador": "cpu",
         "ram_gb": "ram",
     }
-
     for campo_payload, clave_auto in campos_equipo.items():
         if not equipo.get(campo_payload):
             item = app.auto_entries.get(clave_auto)
-
             if item:
                 set_entry_error(app, item.get("entry"))
 
@@ -85,33 +72,24 @@ def marcar_validacion_visual(app, payload: dict) -> None:
         set_entry_error(app, getattr(app.buscador_registrador, "entry", None))
         set_entry_error(app, getattr(app, "entry_nombre_registrador", None))
 
-    # ── Identificador del equipo ──────────────────────────────────────────────
-    if not (
-        equipo.get("numero_de_serie_equipo")
-        or equipo.get("codigo_inventario_equipo")
-    ):
-        for clave in ("serial", "codigo_inventario"):
-            item = app.auto_entries.get(clave)
+    # ── N° de serie del equipo (único obligatorio) ────────────────────────────
+    if not equipo.get("numero_de_serie_equipo"):
+        item = app.auto_entries.get("serial")
+        if item:
+            set_entry_error(app, item.get("entry"))
 
-            if item:
-                set_entry_error(app, item.get("entry"))
-
-    # ── Identificador de monitores ────────────────────────────────────────────
+    # ── N° de serie de monitores ──────────────────────────────────────────────
     for i, monitor in enumerate(payload.get("monitores") or []):
-        if monitor.get("numero_de_serie") or monitor.get("codigo_inventario"):
+        if monitor.get("numero_de_serie"):
             continue
-
         if i < len(app.monitores_vars):
             entries = app.monitores_vars[i].get("entries", {})
             set_entry_error(app, entries.get("numero_de_serie"))
-            set_entry_error(app, entries.get("codigo_inventario"))
 
-    # ── Identificador de impresoras ───────────────────────────────────────────
+    # ── N° de serie de impresoras ─────────────────────────────────────────────
     for i, impresora in enumerate(payload.get("impresoras") or []):
-        if impresora.get("numero_de_serie") or impresora.get("codigo_inventario"):
+        if impresora.get("numero_de_serie"):
             continue
-
         if i < len(app.impresoras_vars):
             entries = app.impresoras_vars[i].get("entries", {})
             set_entry_error(app, entries.get("numero_de_serie"))
-            set_entry_error(app, entries.get("codigo_inventario"))

@@ -10,25 +10,28 @@ from funciones.discos.main import obtener_discos_smart
 from funciones.monitores import obtener_monitores
 from funciones.impresoras import obtener_impresoras_activas
 from funciones.tipo_equipo import detectar_tipo_equipo
-from funciones.permisos import admin
 
 from utils.formato import formatear_capacidad
 from utils.respaldo import guardar_respaldo
 from utils.api_cliente import leer_url_api, enviar_payload_api
 from utils.payload import construir_payload, validar_payload, normalizar_ram_gb
-from utils.observaciones import (agregar_observacion_discos_secundarios, agregar_observacion_pantallas_integradas,)
-from utils.rename_pc import generar_nombre_equipo, renombrar_equipo
+from utils.observaciones import (
+    agregar_observacion_discos_secundarios,
+    agregar_observacion_pantallas_integradas,
+)
 from utils.logger import setup_logger
 from utils.rut import formatear_rut
-from utils.data_loader import (cargar_funcionarios, cargar_usuarios_sistema, cargar_departamentos,)
+from utils.data_loader import cargar_funcionarios, cargar_usuarios_sistema, cargar_departamentos
 
 from ui.estilos import configurar_estilo
 from ui.auto import mostrar_discos_en_auto_frame
 from ui.layout import construir_interfaz
 from ui.helpers import seccion, campo
-from ui.validacion import (limpiar_validacion_visual, marcar_validacion_visual, set_entry_normal,)
-
-from ui.bloques import (crear_bloque_monitor, crear_bloque_impresora, renumerar_monitores, renumerar_impresoras,)
+from ui.validacion import limpiar_validacion_visual, marcar_validacion_visual, set_entry_normal
+from ui.bloques import (
+    crear_bloque_monitor, crear_bloque_impresora,
+    renumerar_monitores, renumerar_impresoras,
+)
 
 
 class InventarioApp:
@@ -64,10 +67,9 @@ class InventarioApp:
         self.var_usuario = tk.StringVar()
         self.var_rut_funcionario = tk.StringVar()
         self.var_departamento_funcionario = tk.StringVar()
-
         self.var_nombre_registrador = tk.StringVar()
         self.var_rut_registrador = tk.StringVar()
-        
+
         self.id_funcionario_seleccionado = None
         self.id_registrador_seleccionado = None
         self.id_departamento_seleccionado = None
@@ -87,25 +89,8 @@ class InventarioApp:
     def _seccion(self, parent, titulo, *, fill="x", expand=False, pady=(0, 14)):
         return seccion(parent, titulo, fill=fill, expand=expand, pady=pady)
 
-    def _campo(
-        self,
-        parent,
-        texto: str,
-        variable: tk.StringVar,
-        fila: int,
-        width: int = 30,
-        readonly: bool = False,
-        obligatorio: bool = False,
-    ):
-        return campo(
-            parent,
-            texto,
-            variable,
-            fila,
-            width=width,
-            readonly=readonly,
-            obligatorio=obligatorio,
-        )
+    def _campo(self, parent, texto, variable, fila, width=30, readonly=False, obligatorio=False):
+        return campo(parent, texto, variable, fila, width=width, readonly=readonly, obligatorio=obligatorio)
 
     def _set_estado(self, texto: str, color: str) -> None:
         if hasattr(self, "lbl_estado"):
@@ -115,9 +100,9 @@ class InventarioApp:
         if hasattr(self, "btn_registrar"):
             self.btn_registrar.config(state="disabled" if bloquear else "normal")
 
+    # ── Validación de RUT ─────────────────────────────────────────────────────
     def _entrada_rut_permitida(self, valor_propuesto: str) -> bool:
         caracteres = []
-
         for c in str(valor_propuesto or ""):
             if c.isdigit():
                 caracteres.append(c)
@@ -127,13 +112,10 @@ class InventarioApp:
                 continue
             else:
                 return False
-
         if len(caracteres) > 9:
             return False
-
         if "K" in caracteres[:-1]:
             return False
-
         return True
 
     def _bind_formato_rut(self, entry, variable, variable_visible=None) -> None:
@@ -146,46 +128,29 @@ class InventarioApp:
         def aplicar_formato(_=None):
             var_visible = variable_visible or variable
             valor = formatear_rut(var_visible.get()) or ""
-
-            if variable_visible is not None:
-                if variable_visible.get() != valor:
-                    variable_visible.set(valor)
-
+            if variable_visible is not None and variable_visible.get() != valor:
+                variable_visible.set(valor)
             if variable.get() != valor:
                 variable.set(valor)
-
             entry.icursor(tk.END)
 
-        entry.bind(
-            "<KeyRelease>",
-            lambda e: self.root.after_idle(aplicar_formato),
-            add="+",
-        )
-        entry.bind(
-            "<<Paste>>",
-            lambda e: self.root.after_idle(aplicar_formato),
-            add="+",
-        )
+        entry.bind("<KeyRelease>", lambda e: self.root.after_idle(aplicar_formato), add="+")
+        entry.bind("<<Paste>>", lambda e: self.root.after_idle(aplicar_formato), add="+")
 
     def _instalar_formateo_rut(self) -> None:
-        self._bind_formato_rut(
-            self.entry_rut_funcionario,
-            self.var_rut_funcionario,
-        )
-
+        self._bind_formato_rut(self.entry_rut_funcionario, self.var_rut_funcionario)
         self._bind_formato_rut(
             self.buscador_registrador.entry,
             self.var_rut_registrador,
             self.buscador_registrador.var_buscar,
         )
+
     # ── Edición de campos ──────────────────────────────────────────────────────
     def _habilitar_grupo_generico(self, entries: list) -> None:
-        entries = [entry for entry in entries if entry]
-
+        entries = [e for e in entries if e]
         for entry in entries:
             set_entry_normal(entry)
             entry.config(state="normal")
-
         if entries:
             entries[0].focus_set()
             entries[0].icursor("end")
@@ -195,7 +160,6 @@ class InventarioApp:
                 if self.root.focus_get() not in entries:
                     for entry in entries:
                         entry.config(state="readonly")
-
             self.root.after_idle(bloquear)
 
         for entry in entries:
@@ -213,17 +177,14 @@ class InventarioApp:
             for item in self.auto_entries.values()
             if item.get("entry")
         ] + self.discos_entries
-
         self._habilitar_grupo_generico(entries)
 
     # ── Buscadores ─────────────────────────────────────────────────────────────
     def _on_funcionario_seleccionado(self, persona: dict) -> None:
         rut = formatear_rut(persona.get("rut", "")) or ""
-
         self.id_funcionario_seleccionado = persona.get("id")
         self.var_usuario.set(persona.get("nombre", ""))
         self.var_rut_funcionario.set(rut)
-
         for entry in (
             getattr(getattr(self, "buscador_funcionario", None), "entry", None),
             getattr(self, "entry_rut_funcionario", None),
@@ -233,13 +194,11 @@ class InventarioApp:
     def _limpiar_funcionario(self) -> None:
         self.id_funcionario_seleccionado = None
         self.var_rut_funcionario.set("")
-        
+
     def _on_departamento_seleccionado(self, departamento: dict) -> None:
         self.id_departamento_seleccionado = departamento.get("id")
         self.var_departamento_funcionario.set(departamento.get("nombre", ""))
-
-        entry = getattr(getattr(self, "buscador_departamento", None), "entry", None)
-        set_entry_normal(entry)
+        set_entry_normal(getattr(getattr(self, "buscador_departamento", None), "entry", None))
 
     def _limpiar_departamento(self) -> None:
         self.id_departamento_seleccionado = None
@@ -247,16 +206,13 @@ class InventarioApp:
 
     def _on_registrador_seleccionado(self, persona: dict) -> None:
         rut = formatear_rut(persona.get("rut", "")) or ""
-
         self.id_registrador_seleccionado = persona.get("id")
         self.var_rut_registrador.set(rut)
         self.var_nombre_registrador.set(persona.get("nombre", ""))
-
         if hasattr(self, "buscador_registrador"):
             self.buscador_registrador._set_valor_sin_trace(rut)
             self.buscador_registrador._marcar_seleccionado(True)
             self.buscador_registrador._ocultar_lista()
-
         for entry in (
             getattr(getattr(self, "buscador_registrador", None), "entry", None),
             getattr(self, "entry_nombre_registrador", None),
@@ -267,56 +223,38 @@ class InventarioApp:
         self.id_registrador_seleccionado = None
         self.var_nombre_registrador.set("")
 
-    # ── Nombre PC ──────────────────────────────────────────────────────────────
-    def probar_nombre_equipo(self) -> None:
-        nombre_sugerido = generar_nombre_equipo(
-            self.var_departamento_funcionario.get(),
-            self.var_usuario.get(),
-        )
-
-        messagebox.showinfo(
-            "Nombre sugerido",
-            f"El nombre sugerido para este equipo es:\n\n{nombre_sugerido}",
-        )
-
     # ── Estados vacíos ─────────────────────────────────────────────────────────
     def _mostrar_estado_monitores_vacio(self) -> None:
         self.monitores_vars.clear()
-
         if hasattr(self, "monitores_container"):
             for child in self.monitores_container.winfo_children():
                 child.destroy()
             self.monitores_container.pack_forget()
-
         if hasattr(self, "lbl_monitores_vacio"):
             self.lbl_monitores_vacio.pack(fill="x", padx=10, pady=(0, 8))
 
     def _ocultar_estado_monitores_vacio(self) -> None:
         if hasattr(self, "lbl_monitores_vacio"):
             self.lbl_monitores_vacio.pack_forget()
-
         if hasattr(self, "monitores_container"):
             self.monitores_container.pack(fill="x", padx=10, pady=(0, 6))
 
     def _mostrar_estado_impresoras_vacio(self) -> None:
         self.impresoras_vars.clear()
-
         if hasattr(self, "impresoras_container"):
             for child in self.impresoras_container.winfo_children():
                 child.destroy()
             self.impresoras_container.pack_forget()
-
         if hasattr(self, "lbl_impresoras_vacio"):
             self.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
 
     def _ocultar_estado_impresoras_vacio(self) -> None:
         if hasattr(self, "lbl_impresoras_vacio"):
             self.lbl_impresoras_vacio.pack_forget()
-
         if hasattr(self, "impresoras_container"):
             self.impresoras_container.pack(fill="x", padx=10, pady=(0, 6))
 
-    # ── Bloques activos ────────────────────────────────────────────────────────
+    # ── Bloques ────────────────────────────────────────────────────────────────
     def _crear_bloque_monitor(self, datos: dict = None) -> None:
         self._ocultar_estado_monitores_vacio()
         crear_bloque_monitor(self, datos)
@@ -371,7 +309,6 @@ class InventarioApp:
                 )
 
             self.datos_auto[clave] = valor
-
             if clave in self.auto_entries:
                 self.auto_entries[clave]["var"].set(str(valor))
 
@@ -392,17 +329,8 @@ class InventarioApp:
         mostrar_discos_en_auto_frame(self)
         agregar_observacion_discos_secundarios(self)
 
-        monitores_integrados = [
-            monitor
-            for monitor in self.monitores_detectados
-            if monitor.get("es_pantalla_integrada")
-        ]
-
-        monitores_externos = [
-            monitor
-            for monitor in self.monitores_detectados
-            if not monitor.get("es_pantalla_integrada")
-        ]
+        monitores_integrados = [m for m in self.monitores_detectados if m.get("es_pantalla_integrada")]
+        monitores_externos = [m for m in self.monitores_detectados if not m.get("es_pantalla_integrada")]
 
         if monitores_integrados:
             agregar_observacion_pantallas_integradas(self, monitores_integrados)
@@ -447,45 +375,30 @@ class InventarioApp:
                 buscador.validar_o_limpiar()
 
         limpiar_validacion_visual(self)
-
         self.fecha_hora_envio = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         payload = construir_payload(self)
-        import json
-        messagebox.showinfo(
-            "DEBUG payload",
-            json.dumps(payload, ensure_ascii=False, indent=4)
-        )
         ok, faltantes = validar_payload(payload)
-
         marcar_validacion_visual(self, payload)
 
         if faltantes:
             messagebox.showwarning(
                 "Faltan datos",
-                "Completa estos campos obligatorios o identificadores requeridos:\n\n— "
-                + "\n— ".join(faltantes),
+                "Completa estos campos obligatorios:\n\n— " + "\n— ".join(faltantes),
             )
             return
 
-        if not messagebox.askyesno(
-            "Confirmar registro",
-            "¿Confirmas el envío de este inventario?",
-        ):
+        if not messagebox.askyesno("Confirmar registro", "¿Confirmas el envío de este inventario?"):
             return
 
         self._bloquear_envio(True)
-
         try:
             url, error = leer_url_api(CONFIG_PATH)
-
             if error:
                 messagebox.showerror("Error de configuración", error)
                 self._set_estado("● URL no configurada", C["rojo"])
                 return
-
             self._enviar_payload(url, payload)
-
         finally:
             self._bloquear_envio(False)
 
@@ -522,10 +435,7 @@ class InventarioApp:
             return
 
         ruta = guardar_respaldo(payload, "ERROR_SERVIDOR", detalle)
-        messagebox.showerror(
-            "Error del servidor",
-            f"Motivo: {mensaje}\n\nRespaldo:\n{ruta}",
-        )
+        messagebox.showerror("Error del servidor", f"Motivo: {mensaje}\n\nRespaldo:\n{ruta}")
         self._set_estado("● Error del servidor", C["rojo"])
 
     def _registro_exitoso(self, respuesta_json: dict) -> None:
@@ -534,9 +444,7 @@ class InventarioApp:
             or respuesta_json.get("mensaje")
             or "Registro guardado correctamente."
         )
-
         datos = respuesta_json.get("datos") or respuesta_json.get("data") or {}
-
         activos = datos.get("activos_procesados") or []
         asignaciones = datos.get("asignaciones") or []
         advertencias = datos.get("advertencias") or []
@@ -548,22 +456,13 @@ class InventarioApp:
             for activo in activos:
                 if isinstance(activo, dict):
                     tipo = activo.get("tipo", "ACTIVO")
-                    id_activo = activo.get("id_activo", "")
-                    codigo = activo.get("codigo_inventario")
-                    serie = activo.get("numero_de_serie")
-                    accion = activo.get("accion", "procesado")
-
-                    linea = f"\n- {tipo}: {accion}"
-
-                    if id_activo:
-                        linea += f" | ID activo: {id_activo}"
-
-                    if codigo:
-                        linea += f" | Código: {codigo}"
-
-                    if serie:
-                        linea += f" | Serie: {serie}"
-
+                    linea = f"\n- {tipo}: {activo.get('accion', 'procesado')}"
+                    if activo.get("id_activo"):
+                        linea += f" | ID: {activo['id_activo']}"
+                    if activo.get("codigo_inventario"):
+                        linea += f" | Código: {activo['codigo_inventario']}"
+                    if activo.get("numero_de_serie"):
+                        linea += f" | Serie: {activo['numero_de_serie']}"
                     resumen += linea
                 else:
                     resumen += f"\n- {activo}"
@@ -574,18 +473,11 @@ class InventarioApp:
             resumen += "\n\nAsignaciones procesadas:"
             for asignacion in asignaciones:
                 if isinstance(asignacion, dict):
-                    tipo = asignacion.get("tipo", "ACTIVO")
-                    id_activo = asignacion.get("id_activo", "")
-                    id_asignacion = asignacion.get("id_asignacion", "")
-
-                    linea = f"\n- {tipo}"
-
-                    if id_activo:
-                        linea += f" | ID activo: {id_activo}"
-
-                    if id_asignacion:
-                        linea += f" | ID asignación: {id_asignacion}"
-
+                    linea = f"\n- {asignacion.get('tipo', 'ACTIVO')}"
+                    if asignacion.get("id_activo"):
+                        linea += f" | ID activo: {asignacion['id_activo']}"
+                    if asignacion.get("id_asignacion"):
+                        linea += f" | ID asignación: {asignacion['id_asignacion']}"
                     resumen += linea
                 else:
                     resumen += f"\n- {asignacion}"
@@ -594,57 +486,19 @@ class InventarioApp:
 
         if advertencias:
             resumen += "\n\nAdvertencias:"
-            for advertencia in advertencias:
-                if isinstance(advertencia, dict):
-                    tipo = advertencia.get("tipo", "ACTIVO")
-                    mensaje_adv = advertencia.get("mensaje", "Advertencia sin detalle")
-                    id_activo = advertencia.get("id_activo")
-                    indice = advertencia.get("indice")
-
-                    linea = f"\n- {tipo}: {mensaje_adv}"
-
-                    if id_activo:
-                        linea += f" | ID activo: {id_activo}"
-
-                    if indice is not None:
-                        linea += f" | Índice: {indice}"
-
+            for adv in advertencias:
+                if isinstance(adv, dict):
+                    linea = f"\n- {adv.get('tipo', 'ACTIVO')}: {adv.get('mensaje', 'Sin detalle')}"
+                    if adv.get("id_activo"):
+                        linea += f" | ID: {adv['id_activo']}"
                     resumen += linea
                 else:
-                    resumen += f"\n- {advertencia}"
-
-        if advertencias:
-            messagebox.showwarning(
-                "Registro con advertencias",
-                resumen,
-            )
+                    resumen += f"\n- {adv}"
+            messagebox.showwarning("Registro con advertencias", resumen)
             self._set_estado("● Registrado con advertencias", C["amarillo"])
-            return
-
-        messagebox.showinfo(
-            "Registro exitoso",
-            resumen,
-        )
-
-        self._set_estado("● Registrado correctamente ✓", C["verde"])
-
-        nombre_sugerido = generar_nombre_equipo(
-            self.var_departamento_funcionario.get(),
-            self.var_usuario.get(),
-        )
-
-        if not messagebox.askyesno(
-            "Renombrar equipo",
-            f"Nombre sugerido: {nombre_sugerido}\n\n¿Deseas renombrar este equipo?",
-        ):
-            return
-
-        ok_rename, msg = renombrar_equipo(nombre_sugerido)
-
-        if ok_rename:
-            messagebox.showinfo("Equipo renombrado", msg)
         else:
-            messagebox.showerror("Error al renombrar", msg)
+            messagebox.showinfo("Registro exitoso", resumen)
+            self._set_estado("● Registrado correctamente ✓", C["verde"])
 
 
 def main() -> None:
@@ -655,7 +509,6 @@ def main() -> None:
         root.mainloop()
     except Exception:
         import traceback
-
         print("ERROR AL INICIAR:\n", traceback.format_exc())
         input("Presiona ENTER para salir...")
 

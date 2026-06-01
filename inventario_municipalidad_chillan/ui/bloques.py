@@ -4,31 +4,29 @@ from tkinter import ttk
 from config import C, CAMPOS_MONITOR, CAMPOS_IMPRESORA
 
 
-CAMPOS_IDENTIFICADOR = {
-    "numero_de_serie",
-    "codigo_inventario",
-}
+CAMPO_SERIE = "numero_de_serie"
+CAMPO_CODIGO = "codigo_inventario"
 
 
-def _es_identificador(clave: str) -> bool:
-    return clave in CAMPOS_IDENTIFICADOR
+def _es_serie(clave: str) -> bool:
+    return clave == CAMPO_SERIE
 
 
-def _crear_label_bloque(parent, texto: str, *, identificador: bool = False) -> ttk.Frame:
+def _crear_label_bloque(parent, texto: str, *, es_serie: bool = False) -> ttk.Frame:
     label_frame = ttk.Frame(parent)
 
     ttk.Label(
         label_frame,
         text=texto,
-        foreground=C["texto"] if identificador else C["label_claro"],
-        font=("Segoe UI", 9, "bold") if identificador else ("Segoe UI", 9),
+        foreground=C["texto"] if es_serie else C["label_claro"],
+        font=("Segoe UI", 9, "bold") if es_serie else ("Segoe UI", 9),
     ).pack(side="left")
 
-    if identificador:
+    if es_serie:
         ttk.Label(
             label_frame,
             text=" ★",
-            foreground=C["gris_sub"],
+            foreground=C["rojo"],
             font=("Segoe UI", 9, "bold"),
         ).pack(side="left")
 
@@ -63,61 +61,33 @@ def crear_bloque(app, container, lista: list, titulo: str,
     entries = {}
 
     for fila, (clave, label) in enumerate(campos):
-        es_id = _es_identificador(clave)
+        es_s = _es_serie(clave)
 
-        label_frame = _crear_label_bloque(
-            frame,
-            label,
-            identificador=es_id,
-        )
-        label_frame.grid(
-            row=fila,
-            column=0,
-            sticky="w",
-            padx=(10, 6),
-            pady=5,
-        )
+        label_frame = _crear_label_bloque(frame, label, es_serie=es_s)
+        label_frame.grid(row=fila, column=0, sticky="w", padx=(10, 6), pady=5)
 
-        entry = ttk.Entry(
-            frame,
-            textvariable=vars_[clave],
-            width=34,
-            state="readonly",
-        )
-        entry.grid(
-            row=fila,
-            column=1,
-            sticky="ew",
-            padx=(0, 10),
-            pady=5,
-        )
+        entry = ttk.Entry(frame, textvariable=vars_[clave], width=34, state="readonly")
+        entry.grid(row=fila, column=1, sticky="ew", padx=(0, 10), pady=5)
 
         entries[clave] = entry
 
     ayuda = ttk.Label(
         frame,
-        text="★ Completa al menos uno de estos dos campos: N° serie o Código inventario.",
-        foreground=C["gris_sub"],
+        text="★ N° de serie obligatorio.",
+        foreground=C["rojo"],
         font=("Segoe UI", 8, "italic"),
         background=C["gris_panel"],
     )
     ayuda.grid(
-        row=len(campos),
-        column=0,
-        columnspan=2,
-        sticky="w",
-        padx=(10, 10),
-        pady=(0, 6),
+        row=len(campos), column=0, columnspan=2,
+        sticky="w", padx=(10, 10), pady=(0, 6),
     )
 
     btns = ttk.Frame(frame)
     btns.grid(
-        row=0,
-        column=2,
+        row=0, column=2,
         rowspan=max(1, len(campos) + 1),
-        padx=(8, 8),
-        pady=6,
-        sticky="ne",
+        padx=(8, 8), pady=6, sticky="ne",
     )
 
     ttk.Button(
@@ -132,9 +102,7 @@ def crear_bloque(app, container, lista: list, titulo: str,
         text="✕ Quitar",
         style="Remove.TButton",
         command=lambda f=outer: quitar_bloque(
-            f,
-            lista,
-            renumerar,
+            f, lista, renumerar,
             permitir_vacio=permitir_vacio,
             on_empty=on_empty,
         ),
@@ -142,11 +110,7 @@ def crear_bloque(app, container, lista: list, titulo: str,
 
     frame.columnconfigure(1, weight=1)
 
-    lista.append({
-        "frame": outer,
-        "entries": entries,
-        **vars_,
-    })
+    lista.append({"frame": outer, "entries": entries, **vars_})
 
     if iniciar_editable:
         app.root.after_idle(lambda e=entries: app._habilitar_grupo(e))
@@ -168,8 +132,6 @@ def quitar_bloque(frame, lista: list, renumerar,
 
 
 def crear_bloque_monitor(app, datos: dict = None) -> None:
-    es_manual = datos is None
-
     crear_bloque(
         app,
         app.monitores_container,
@@ -180,13 +142,11 @@ def crear_bloque_monitor(app, datos: dict = None) -> None:
         datos,
         permitir_vacio=True,
         on_empty=app._mostrar_estado_monitores_vacio,
-        iniciar_editable=es_manual,
+        iniciar_editable=(datos is None),
     )
 
 
 def crear_bloque_impresora(app, datos: dict = None) -> None:
-    es_manual = datos is None
-
     crear_bloque(
         app,
         app.impresoras_container,
@@ -197,7 +157,7 @@ def crear_bloque_impresora(app, datos: dict = None) -> None:
         datos,
         permitir_vacio=True,
         on_empty=app._mostrar_estado_impresoras_vacio,
-        iniciar_editable=es_manual,
+        iniciar_editable=(datos is None),
     )
 
 

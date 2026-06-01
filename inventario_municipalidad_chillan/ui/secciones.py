@@ -13,22 +13,14 @@ LABEL_BOLD_FONT = ("Segoe UI", 9, "bold")
 
 def _label_campo(parent, texto: str, *, obligatorio: bool = False):
     cont = ttk.Frame(parent)
-
     ttk.Label(
         cont,
         text=texto,
         foreground=C["texto"] if obligatorio else C["label_claro"],
         font=LABEL_BOLD_FONT if obligatorio else LABEL_FONT,
     ).pack(side="left")
-
     if obligatorio:
-        ttk.Label(
-            cont,
-            text=" ★",
-            foreground=C["rojo"],
-            font=LABEL_BOLD_FONT,
-        ).pack(side="left")
-
+        ttk.Label(cont, text=" ★", foreground=C["rojo"], font=LABEL_BOLD_FONT).pack(side="left")
     return cont
 
 
@@ -39,13 +31,10 @@ def _mensaje_obligatorios(parent, fila: int, columna: int = 0, columnspan: int =
         foreground=C["rojo"],
         font=("Segoe UI", 8, "italic"),
     ).grid(
-        row=fila,
-        column=columna,
-        columnspan=columnspan,
-        sticky="w",
-        padx=(10, 10),
-        pady=(0, 6),
+        row=fila, column=columna, columnspan=columnspan,
+        sticky="w", padx=(10, 10), pady=(0, 6),
     )
+
 
 def build_monitores_frame(app, parent) -> None:
     frame = app._seccion(parent, "Monitores asignados")
@@ -63,7 +52,7 @@ def build_monitores_frame(app, parent) -> None:
         frame,
         text="No se detectaron monitores. Puedes agregar uno manualmente si corresponde.",
         foreground=C["gris_sub"],
-        font=("Segoe UI", 9),
+        font=LABEL_FONT,
     )
     app.lbl_monitores_vacio.pack(fill="x", padx=10, pady=(0, 8))
     app.lbl_monitores_vacio.pack_forget()
@@ -89,7 +78,7 @@ def build_impresoras_frame(app, parent) -> None:
         frame,
         text="No se detectaron impresoras activas. Puedes agregar una manualmente si corresponde.",
         foreground=C["gris_sub"],
-        font=("Segoe UI", 9),
+        font=LABEL_FONT,
     )
     app.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
     app.lbl_impresoras_vacio.pack_forget()
@@ -141,13 +130,6 @@ def build_acciones_frame(app, parent) -> None:
 
     ttk.Button(
         row,
-        text="Probar nombre PC",
-        style="Small.TButton",
-        command=app.probar_nombre_equipo,
-    ).pack(side="left", padx=(10, 0))
-
-    ttk.Button(
-        row,
         text="Cancelar",
         style="Danger.TButton",
         command=app.root.destroy,
@@ -160,18 +142,15 @@ def build_acciones_frame(app, parent) -> None:
         font=LABEL_FONT,
     )
     app.lbl_estado.pack(fill="x", pady=(10, 0))
-    
+
+
 def build_manual_frame(app, parent) -> None:
     frame = app._seccion(parent, "Departamento y funcionario asignado")
     frame.columnconfigure(1, weight=1)
 
-    # ── Departamento ──────────────────────────────────────────────────────────
-    _label_campo(
-        frame,
-        "Departamento:",
-        obligatorio=True,
-    ).grid(row=0, column=0, sticky="w", padx=(10, 6), pady=5)
-
+    _label_campo(frame, "Departamento:", obligatorio=True).grid(
+        row=0, column=0, sticky="w", padx=(10, 6), pady=5
+    )
     app.buscador_departamento = BuscadorAutocomplete(
         frame,
         datos=app.departamentos_data,
@@ -183,21 +162,11 @@ def build_manual_frame(app, parent) -> None:
         on_clear=app._limpiar_departamento,
         permitir_manual=False,
     )
-    app.buscador_departamento.grid(
-        row=0,
-        column=1,
-        sticky="ew",
-        padx=(0, 14),
-        pady=5,
+    app.buscador_departamento.grid(row=0, column=1, sticky="ew", padx=(0, 14), pady=5)
+
+    _label_campo(frame, "Funcionario responsable:", obligatorio=True).grid(
+        row=1, column=0, sticky="w", padx=(10, 6), pady=5
     )
-
-    # ── Funcionario ───────────────────────────────────────────────────────────
-    _label_campo(
-        frame,
-        "Funcionario responsable:",
-        obligatorio=True,
-    ).grid(row=1, column=0, sticky="w", padx=(10, 6), pady=5)
-
     app.buscador_funcionario = BuscadorAutocomplete(
         frame,
         datos=app.funcionarios_data,
@@ -205,29 +174,16 @@ def build_manual_frame(app, parent) -> None:
         campo_busqueda="nombre",
         campo_valor="nombre",
         campos_extra_busqueda=["rut"],
-        formato_resultado=lambda p: (
-            f"{p.get('nombre', '')} — {p.get('rut', '')}"
-        ),
+        formato_resultado=lambda p: f"{p.get('nombre', '')} — {p.get('rut', '')}",
         on_select=app._on_funcionario_seleccionado,
         on_clear=app._limpiar_funcionario,
         permitir_manual=False,
     )
-    app.buscador_funcionario.grid(
-        row=1,
-        column=1,
-        sticky="ew",
-        padx=(0, 14),
-        pady=5,
-    )
+    app.buscador_funcionario.grid(row=1, column=1, sticky="ew", padx=(0, 14), pady=5)
 
-    # ── RUT funcionario ───────────────────────────────────────────────────────
     app.entry_rut_funcionario = app._campo(
-        frame,
-        "RUT funcionario:",
-        app.var_rut_funcionario,
-        2,
-        readonly=True,
-        obligatorio=True,
+        frame, "RUT funcionario:", app.var_rut_funcionario, 2,
+        readonly=True, obligatorio=True,
     )
 
     _mensaje_obligatorios(frame, fila=3, columnspan=2)
@@ -237,24 +193,16 @@ def build_trazabilidad_frame(app, parent) -> None:
     frame = app._seccion(parent, "Datos del registrador")
     frame.columnconfigure(1, weight=1)
 
-    ttk.Label(
-        frame,
-        text="Fecha y hora:",
-        foreground=C["gris_sub"],
-        font=LABEL_FONT,
-    ).grid(row=0, column=0, sticky="w", padx=(10, 6), pady=5)
+    ttk.Label(frame, text="Fecha y hora:", foreground=C["gris_sub"], font=LABEL_FONT).grid(
+        row=0, column=0, sticky="w", padx=(10, 6), pady=5
+    )
 
     reloj = tk.Frame(frame, bg=C["gris_panel"])
     reloj.grid(row=0, column=1, sticky="w", padx=(0, 10), pady=5)
 
-    tk.Label(
-        reloj,
-        text="●",
-        bg=C["gris_panel"],
-        fg=C["rojo"],
-        font=LABEL_BOLD_FONT,
-    ).pack(side="left", padx=(0, 6))
-
+    tk.Label(reloj, text="●", bg=C["gris_panel"], fg=C["rojo"], font=LABEL_BOLD_FONT).pack(
+        side="left", padx=(0, 6)
+    )
     tk.Label(
         reloj,
         textvariable=app.var_fecha_hora_visible,
@@ -263,13 +211,9 @@ def build_trazabilidad_frame(app, parent) -> None:
         font=("Segoe UI", 10, "bold"),
     ).pack(side="left")
 
-    # ── Registrador ───────────────────────────────────────────────────────────
-    _label_campo(
-        frame,
-        "RUT registrador:",
-        obligatorio=True,
-    ).grid(row=1, column=0, sticky="w", padx=(10, 6), pady=5)
-
+    _label_campo(frame, "RUT registrador:", obligatorio=True).grid(
+        row=1, column=0, sticky="w", padx=(10, 6), pady=5
+    )
     app.buscador_registrador = BuscadorAutocomplete(
         frame,
         datos=app.usuarios_sistema_data,
@@ -282,23 +226,12 @@ def build_trazabilidad_frame(app, parent) -> None:
         on_clear=app._limpiar_registrador,
         permitir_manual=False,
     )
-    app.buscador_registrador.grid(
-        row=1,
-        column=1,
-        sticky="ew",
-        padx=(0, 14),
-        pady=5,
-    )
+    app.buscador_registrador.grid(row=1, column=1, sticky="ew", padx=(0, 14), pady=5)
 
     app.entry_nombre_registrador = app._campo(
-        frame,
-        "Nombre registrador:",
-        app.var_nombre_registrador,
-        2,
-        readonly=True,
-        obligatorio=True,
+        frame, "Nombre registrador:", app.var_nombre_registrador, 2,
+        readonly=True, obligatorio=True,
     )
 
     _mensaje_obligatorios(frame, fila=3, columnspan=2)
-
     app._actualizar_reloj()
