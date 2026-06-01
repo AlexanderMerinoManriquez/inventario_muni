@@ -1,5 +1,6 @@
 import re
 
+
 SERIALES_INVALIDOS = {
     "",
     "0",
@@ -10,6 +11,7 @@ SERIALES_INVALIDOS = {
     "000000",
     "0000000",
     "00000000",
+
     "NONE",
     "UNKNOWN",
     "DESCONOCIDO",
@@ -21,6 +23,7 @@ SERIALES_INVALIDOS = {
     "NA",
     "NULL",
     "ERROR",
+
     "DEFAULT STRING",
     "DEFAULTSTRING",
     "SYSTEM SERIAL NUMBER",
@@ -33,14 +36,28 @@ SERIALES_INVALIDOS = {
     "NOTAPPLICABLE",
     "OEM",
     "O.E.M.",
+
     "USB001",
     "USB002",
     "USB003",
     "USB004",
+    "USB005",
     "LPT1",
     "LPT2",
     "PORT",
+
+    "PRINTQUEUE",
+    "PRINTQUEUES",
+    "PRINT QUEUE",
+    "PRINT QUEUES",
+    "LOCALPRINTQUEUE",
+    "LOCAL PRINT QUEUE",
+    "PRINTERQUEUE",
+    "PRINTERQUEUES",
+    "PRINTER QUEUE",
+    "PRINTER QUEUES",
 }
+
 
 PATRONES_SERIAL_INVALIDO = (
     "WSD",
@@ -56,9 +73,17 @@ PATRONES_SERIAL_INVALIDO = (
     "PCI\\",
     "ACPI\\",
     "LOCALPRINTQUEUE",
+    "PRINTQUEUE",
+    "PRINTQUEUES",
+    "PRINTERQUEUE",
     "MS_BTH",
     "UID",
 )
+
+
+def _compactar(valor: str) -> str:
+    return re.sub(r"[\s\-_\.]+", "", str(valor or "").upper())
+
 
 def es_guid(valor: str) -> bool:
     return bool(
@@ -68,13 +93,14 @@ def es_guid(valor: str) -> bool:
         )
     )
 
+
 def normalizar_serial(valor, min_len: int = 3) -> str | None:
     serial = str(valor or "").strip().upper().strip("{}")
 
     if not serial:
         return None
 
-    serial_compacto = re.sub(r"[\s\-_\.]+", "", serial)
+    serial_compacto = _compactar(serial)
 
     if serial in SERIALES_INVALIDOS or serial_compacto in SERIALES_INVALIDOS:
         return None
@@ -85,8 +111,11 @@ def normalizar_serial(valor, min_len: int = 3) -> str | None:
     if es_guid(serial):
         return None
 
-    if any(patron in serial for patron in PATRONES_SERIAL_INVALIDO):
-        return None
+    for patron in PATRONES_SERIAL_INVALIDO:
+        patron_compacto = _compactar(patron)
+
+        if patron in serial or patron_compacto in serial_compacto:
+            return None
 
     if "\\" in serial or "/" in serial:
         return None
@@ -94,16 +123,11 @@ def normalizar_serial(valor, min_len: int = 3) -> str | None:
     if "&" in serial:
         return None
 
-    if re.fullmatch(r"0+", serial_compacto):
-        return None
-
-    if re.fullmatch(r"F+", serial_compacto):
-        return None
-
-    if re.fullmatch(r"X+", serial_compacto):
+    if len(set(serial_compacto)) == 1:
         return None
 
     return serial
+
 
 def extraer_serial_desde_ruta(valor, min_len: int = 3) -> str | None:
     texto = str(valor or "").strip()

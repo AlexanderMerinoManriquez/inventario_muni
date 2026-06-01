@@ -1,1 +1,1 @@
-https://www.municipalidadchillan.cl/endPoint/guardarInventarioJorge.php
+https://www.municipalidadchillan.cl/endPoint/guardarInventario.php

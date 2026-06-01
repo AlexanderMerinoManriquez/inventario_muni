@@ -2,6 +2,14 @@ import json
 import re
 import subprocess
 
+from utils.serial_utils import (
+    normalizar_serial,
+    extraer_serial_desde_ruta,
+)
+
+
+IMPRESORA_SERIAL_MIN_LEN = 5
+
 
 IMPRESORAS_EXCLUIDAS = (
     "microsoft print to pdf",
@@ -15,30 +23,6 @@ IMPRESORAS_EXCLUIDAS = (
     "send to onenote",
 )
 
-SERIALES_INVALIDOS = {
-    "",
-    "0",
-    "00",
-    "000",
-    "0000",
-    "00000",
-    "000000",
-    "NONE",
-    "UNKNOWN",
-    "DESCONOCIDO",
-    "NO DETECTADO",
-    "SIN SERIAL",
-    "SIN_SERIE",
-    "N/A",
-    "NA",
-    "USB001",
-    "USB002",
-    "USB003",
-    "USB004",
-    "LPT1",
-    "LPT2",
-    "PORT",
-}
 
 TOKENS_IGNORADOS = {
     "printer",
@@ -56,6 +40,20 @@ TOKENS_IGNORADOS = {
 }
 
 
+SERIALES_IMPRESORA_INVALIDOS_EXTRA = {
+    "PRINTQUEUE",
+    "PRINTQUEUES",
+    "PRINT QUEUE",
+    "PRINT QUEUES",
+    "LOCALPRINTQUEUE",
+    "LOCAL PRINT QUEUE",
+    "PRINTERQUEUE",
+    "PRINTERQUEUES",
+    "PRINTER QUEUE",
+    "PRINTER QUEUES",
+}
+
+
 def _normalizar_texto(valor: str) -> str:
     return str(valor or "").strip()
 
@@ -64,56 +62,34 @@ def _normalizar_clave(valor: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(valor or "").lower())
 
 
-def _es_guid(valor: str) -> bool:
-    return bool(
-        re.fullmatch(
-            r"\{?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}?",
-            str(valor or "").strip().upper(),
-        )
-    )
+def _compactar_serial(valor: str) -> str:
+    return re.sub(r"[\s\-_\.]+", "", str(valor or "").upper())
 
 
 def _normalizar_serial(valor: str) -> str:
     serial = str(valor or "").strip().upper().strip("{}")
+    serial_compacto = _compactar_serial(serial)
 
-    if serial in SERIALES_INVALIDOS:
+    if serial in SERIALES_IMPRESORA_INVALIDOS_EXTRA:
         return ""
 
-    if len(serial) < 5:
+    if serial_compacto in {
+        _compactar_serial(v)
+        for v in SERIALES_IMPRESORA_INVALIDOS_EXTRA
+    }:
         return ""
 
-    if _es_guid(serial):
-        return ""
+    return normalizar_serial(
+        serial,
+        min_len=IMPRESORA_SERIAL_MIN_LEN,
+    ) or ""
 
-    patrones_invalidos = (
-        "WSD",
-        "SWD\\",
-        "USBPRINT\\",
-        "ROOT\\",
-        "PRINTENUM\\",
-        "UMB\\",
-        "BTH\\",
-        "BTHENUM\\",
-        "MS_BTH",
-        "LOCALPRINTQUEUE",
-    )
 
-    if any(p in serial for p in patrones_invalidos):
-        return ""
-
-    if "\\" in serial or "/" in serial:
-        return ""
-
-    if "&" in serial:
-        return ""
-
-    if re.fullmatch(r"0+", serial):
-        return ""
-
-    if re.fullmatch(r"F+", serial):
-        return ""
-
-    return serial
+def _extraer_serial_desde_ruta(valor: str) -> str:
+    return extraer_serial_desde_ruta(
+        valor,
+        min_len=IMPRESORA_SERIAL_MIN_LEN,
+    ) or ""
 
 
 def _es_impresora_real(nombre: str) -> bool:
@@ -189,6 +165,7 @@ def _inferir_modelo(nombre: str, driver: str, marca: str) -> str:
 def _extraer_ip(puerto: str) -> str:
     puerto = _normalizar_texto(puerto)
     match = re.search(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b", puerto)
+
     return match.group(1) if match else ""
 
 
@@ -230,19 +207,6 @@ def _sugerir_consumible(nombre: str, driver: str, modelo: str = "") -> str:
     return ""
 
 
-def _extraer_serial_desde_ruta(valor: str) -> str:
-    texto = _normalizar_texto(valor)
-
-    if not texto or "\\" not in texto:
-        return _normalizar_serial(texto)
-
-    candidato = texto.split("\\")[-1].strip()
-    candidato = candidato.strip("{}")
-    candidato = re.sub(r"[^A-Za-z0-9\-_.]", "", candidato)
-
-    return _normalizar_serial(candidato)
-
-
 def _seriales_desde_lista(valores) -> list[str]:
     if not valores:
         return []
@@ -274,7 +238,37 @@ def _crear_regex_busqueda(nombre: str, driver: str) -> str:
     if tokens:
         return "|".join(dict.fromkeys(tokens))
 
-    return "hp|epson|canon|brother|xerox|ricoh|kyocera|samsung|laserjet|deskjet|officejet"
+    return (
+        "hp|epson|canon|brother|xerox|ricoh|kyocera|samsung|"
+        "laserjet|deskjet|officejet"
+    )
+
+
+def _pnp_puede_tener_serial_real(disp: dict) -> bool:
+    pnp_class = _normalizar_texto(disp.get("PNPClass")).lower()
+    service = _normalizar_texto(disp.get("Service")).lower()
+    name = _normalizar_texto(disp.get("Name")).lower()
+    device_id = _normalizar_texto(disp.get("DeviceID")).lower()
+    pnp_device_id = _normalizar_texto(disp.get("PNPDeviceID")).lower()
+
+    texto = f"{name} {device_id} {pnp_device_id}"
+
+    if pnp_class == "printqueue":
+        return False
+
+    if "printqueue" in texto or "print queues" in texto:
+        return False
+
+    if "localprintqueue" in texto:
+        return False
+
+    if "printenum" in texto and service not in ("usbprint", "winusb"):
+        return False
+
+    if service in ("usbprint", "winusb"):
+        return True
+
+    return pnp_class in ("printer", "usbdevice", "usb")
 
 
 def _buscar_serial_impresora(
@@ -289,6 +283,9 @@ def _buscar_serial_impresora(
         return ""
 
     for disp in dispositivos_pnp:
+        if not _pnp_puede_tener_serial_real(disp):
+            continue
+
         nombre_pnp = _normalizar_texto(disp.get("Name"))
         device_id = _normalizar_texto(disp.get("DeviceID"))
         pnp_device_id = _normalizar_texto(disp.get("PNPDeviceID"))
@@ -399,7 +396,7 @@ $pnpBase = @(Get-CimInstance Win32_PnPEntity |
         ($_.Name -match $regex) -or
         ($_.DeviceID -match $regex) -or
         ($_.PNPDeviceID -match $regex) -or
-        ($_.PNPClass -in @('Printer', 'PrintQueue', 'USBDevice', 'USB') -and $_.Name -match $regex) -or
+        ($_.PNPClass -in @('Printer', 'USBDevice', 'USB') -and $_.Name -match $regex) -or
         ($_.Service -in @('usbprint', 'WINUSB') -and $_.Name -match $regex)
     })
 
@@ -425,7 +422,18 @@ $pnp = foreach ($d in $pnpBase) {
                             $leaf -and
                             $leaf -notmatch '&' -and
                             $leaf -notmatch '^[0-9A-Fa-f-]{36}$' -and
-                            $leaf.ToUpper() -notin @('USB001','USB002','USB003','USB004','LPT1','LPT2')
+                            $leaf.ToUpper() -notin @(
+                                'USB001',
+                                'USB002',
+                                'USB003',
+                                'USB004',
+                                'USB005',
+                                'LPT1',
+                                'LPT2',
+                                'PRINTQUEUE',
+                                'PRINTQUEUES',
+                                'LOCALPRINTQUEUE'
+                            )
                         ) {
                             $serialesUsb.Add("USB\$base\$leaf")
                         }
@@ -511,7 +519,7 @@ $pnpBase = @(Get-CimInstance Win32_PnPEntity |
         ($_.Name -match $regex) -or
         ($_.DeviceID -match $regex) -or
         ($_.PNPDeviceID -match $regex) -or
-        ($_.PNPClass -in @('Printer', 'PrintQueue', 'USBDevice', 'USB') -and $_.Name -match $regex) -or
+        ($_.PNPClass -in @('Printer', 'USBDevice', 'USB') -and $_.Name -match $regex) -or
         ($_.Service -in @('usbprint', 'WINUSB') -and $_.Name -match $regex)
     }})
 
