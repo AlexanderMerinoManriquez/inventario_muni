@@ -28,7 +28,7 @@ def _crear_label_campo(parent, texto: str, *, obligatorio: bool = False) -> ttk.
     if obligatorio:
         ttk.Label(
             label_frame,
-            text=" ★",
+            text=" *",
             foreground=C["rojo"],
             font=("Segoe UI", 9, "bold"),
         ).pack(side="left")

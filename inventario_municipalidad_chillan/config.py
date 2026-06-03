@@ -7,6 +7,11 @@ from funciones.ip import obtener_ip
 from funciones.ram import obtener_ram
 from funciones.serial import obtener_serial
 from funciones.sistema_operativo import obtener_sistema
+from funciones.equipo_info import (
+    obtener_marca_equipo,
+    obtener_modelo_equipo,
+    obtener_tipo_equipo_auto,
+)
 
 # ── Rutas ──────────────────────────────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +19,7 @@ CONFIG_PATH   = os.path.join(BASE_DIR, "config.txt")
 RESPALDOS_DIR = os.path.join(BASE_DIR, "RESPALDOS_FALLIDOS")
 ICON_PATH     = os.path.join(BASE_DIR, "assets", "iconoMuni.png")
 BANNER_PATH   = os.path.join(BASE_DIR, "assets", "Bannermuni.png")
+
 # ── API datos municipales ─────────────────────────────────────────────────────
 API_FUNCIONARIOS_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
 API_USUARIOS_SISTEMA_URL = "https://www.municipalidadchillan.cl/endPoint/apiFuncionarios.php"
@@ -24,15 +30,19 @@ API_SOURCE_USUARIOS_SISTEMA = "usuarios_ti"
 API_SOURCE_DEPARTAMENTOS = "departamentos"
 
 API_DATOS_TIMEOUT = 8
-# ── Campos equipos────────────────────────────────────────────────────────
+
+# ── Campos equipos ─────────────────────────────────────────────────────────────
 CAMPOS_AUTO = [
-    ("nombre_pc",         socket.gethostname,   "Nombre PC"),
-    ("sistema_operativo", obtener_sistema,       "Sistema operativo"),
-    ("anydesk",           obtener_anydesk,       "AnyDesk"),
-    ("cpu",               obtener_cpu,           "Procesador"),
-    ("ram",               obtener_ram,           "RAM"),
-    ("ip",                obtener_ip,            "IP"),
-    ("serial",            obtener_serial,        "N° Serie"),
+    ("nombre_pc",         socket.gethostname,        "Nombre PC"),
+    ("marca",             obtener_marca_equipo,      "Marca"),
+    ("modelo",            obtener_modelo_equipo,     "Modelo"),
+    ("tipo",              obtener_tipo_equipo_auto,  "Tipo"),
+    ("sistema_operativo", obtener_sistema,           "Sistema operativo"),
+    ("anydesk",           obtener_anydesk,           "AnyDesk"),
+    ("cpu",               obtener_cpu,               "Procesador"),
+    ("ram",               obtener_ram,               "RAM"),
+    ("ip",                obtener_ip,                "IP"),
+    ("serial",            obtener_serial,            "N° Serie"),
 ]
 
 CAMPOS_MONITOR = [
@@ -41,7 +51,6 @@ CAMPOS_MONITOR = [
     ("pulgadas", "Pulgadas:"),
     ("numero_de_serie", "N° serie:"),
     ("codigo_inventario", "Código inventario:"),
-    
 ]
 
 CAMPOS_IMPRESORA = [
@@ -52,8 +61,8 @@ CAMPOS_IMPRESORA = [
     ("toner_tinta", "Tóner / Tinta:"),
     ("numero_de_serie", "N° serie:"),
     ("codigo_inventario", "Código inventario:"),
-    
 ]
+
 # ── Paleta institucional ───────────────────────────────────────────────────────
 C = {
     "rojo":              "#C8102E",
@@ -82,4 +91,4 @@ C = {
     "dropdown_hover":    "#f5f7ff",
     "gris_readonly":     "#f8f9fb",
     "rojo_estado":       "#C8102E",
-    }
+}

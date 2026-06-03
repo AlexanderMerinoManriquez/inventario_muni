@@ -25,7 +25,7 @@ def _crear_label_bloque(parent, texto: str, *, es_serie: bool = False) -> ttk.Fr
     if es_serie:
         ttk.Label(
             label_frame,
-            text=" ★",
+            text=" *",
             foreground=C["rojo"],
             font=("Segoe UI", 9, "bold"),
         ).pack(side="left")
@@ -73,7 +73,7 @@ def crear_bloque(app, container, lista: list, titulo: str,
 
     ayuda = ttk.Label(
         frame,
-        text="★ N° de serie obligatorio.",
+        text="* N° de serie obligatorio.",
         foreground=C["rojo"],
         font=("Segoe UI", 8, "italic"),
         background=C["gris_panel"],

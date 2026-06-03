@@ -20,14 +20,14 @@ def _label_campo(parent, texto: str, *, obligatorio: bool = False):
         font=LABEL_BOLD_FONT if obligatorio else LABEL_FONT,
     ).pack(side="left")
     if obligatorio:
-        ttk.Label(cont, text=" ★", foreground=C["rojo"], font=LABEL_BOLD_FONT).pack(side="left")
+        ttk.Label(cont, text=" *", foreground=C["rojo"], font=LABEL_BOLD_FONT).pack(side="left")
     return cont
 
 
 def _mensaje_obligatorios(parent, fila: int, columna: int = 0, columnspan: int = 2) -> None:
     ttk.Label(
         parent,
-        text="★ Campos obligatorios: deben completarse antes de registrar el inventario.",
+        text="* Campos obligatorios. Deben seleccionarse desde la lista.",
         foreground=C["rojo"],
         font=("Segoe UI", 8, "italic"),
     ).grid(
@@ -183,7 +183,7 @@ def build_manual_frame(app, parent) -> None:
 
     app.entry_rut_funcionario = app._campo(
         frame, "RUT funcionario:", app.var_rut_funcionario, 2,
-        readonly=True, obligatorio=True,
+        readonly=True, obligatorio=False,
     )
 
     _mensaje_obligatorios(frame, fila=3, columnspan=2)
@@ -230,7 +230,7 @@ def build_trazabilidad_frame(app, parent) -> None:
 
     app.entry_nombre_registrador = app._campo(
         frame, "Nombre registrador:", app.var_nombre_registrador, 2,
-        readonly=True, obligatorio=True,
+        readonly=True, obligatorio=False,
     )
 
     _mensaje_obligatorios(frame, fila=3, columnspan=2)

@@ -44,7 +44,7 @@ def build_auto_frame(app, parent) -> None:
 
 
 def _label_serie_obligatorio(parent, texto: str) -> ttk.Frame:
-    """Label con ★ rojo para el campo de N° serie (obligatorio)."""
+    """Label con * rojo para el campo de N° serie (obligatorio)."""
     cont = ttk.Frame(parent)
     ttk.Label(
         cont,
@@ -54,7 +54,7 @@ def _label_serie_obligatorio(parent, texto: str) -> ttk.Frame:
     ).pack(side="left")
     ttk.Label(
         cont,
-        text=" ★",
+        text=" *",
         foreground=C["rojo"],
         font=("Segoe UI", 9, "bold"),
     ).pack(side="left")
@@ -134,7 +134,7 @@ def mostrar_discos_en_auto_frame(app) -> None:
 
     ayuda = ttk.Label(
         app.auto_frame,
-        text="★ N° de serie obligatorio. Código inventario opcional.",
+        text="* N° de serie obligatorio. Código inventario opcional.",
         foreground=C["rojo"],
         font=("Segoe UI", 8, "italic"),
         background=C["gris_panel"],
