@@ -19,7 +19,7 @@ from utils.observaciones import (
     agregar_observacion_discos_secundarios,
     agregar_observacion_pantallas_integradas,
 )
-from utils.logger import setup_logger
+from utils.logger import setup_logger, limpiar_logs_antiguos
 from utils.rut import formatear_rut
 from utils.data_loader import cargar_funcionarios, cargar_usuarios_sistema, cargar_departamentos
 
@@ -504,14 +504,25 @@ class InventarioApp:
 def main() -> None:
     try:
         setup_logger()
+        limpiar_logs_antiguos()
+
         root = tk.Tk()
         InventarioApp(root)
         root.mainloop()
+
     except Exception:
-        import traceback
-        print("ERROR AL INICIAR:\n", traceback.format_exc())
-        input("Presiona ENTER para salir...")
+        logging.exception("Error crítico al iniciar la aplicación")
+
+        try:
+            messagebox.showerror(
+                "Error crítico",
+                "Ocurrió un error al iniciar el sistema.\n\n"
+                "Revisa el archivo de log para más detalles.",
+            )
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
     main()
+    
