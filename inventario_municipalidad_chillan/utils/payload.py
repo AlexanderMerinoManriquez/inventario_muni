@@ -138,7 +138,6 @@ def _limpiar_impresoras(impresoras: list[dict]) -> list[dict]:
 
 
 def _tiene_serie(item: dict) -> bool:
-    """Solo el N° de serie es obligatorio ahora."""
     return bool(item.get("numero_de_serie"))
 
 

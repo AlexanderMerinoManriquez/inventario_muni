@@ -80,7 +80,6 @@ class BuscadorAutocomplete(tk.Frame):
         self.entry.bind("<Up>",              lambda e: self._mover_lista(-1))
         self.lista.bind("<Down>",            lambda e: self._mover_lista(1))
         self.lista.bind("<Up>",              lambda e: self._mover_lista(-1))
-        # Al perder foco: si no hay selección válida, limpiar
         self.entry.bind("<FocusOut>",        lambda e: self.after(150, self._validar_al_salir))
  
     # ── Normalización ──────────────────────────────────────────────────────────
@@ -137,7 +136,6 @@ class BuscadorAutocomplete(tk.Frame):
             self._activar_trace()
     # ── Eventos de escritura ───────────────────────────────────────────────────
     def _on_escribir(self):
-        """Llamado cada vez que cambia el texto. Marca como no-seleccionado."""
         if self._seleccionado and self.on_clear:
             self.on_clear()
 
@@ -321,7 +319,6 @@ class BuscadorAutocomplete(tk.Frame):
  
     # ── API pública ────────────────────────────────────────────────────────────
     def set_valor_externo(self, valor: str, item: dict = None) -> None:
-        """Establece un valor programáticamente sin disparar la validación."""
         self._set_valor_sin_trace(valor)
         self._marcar_seleccionado(True)
         self.entry.icursor(tk.END)

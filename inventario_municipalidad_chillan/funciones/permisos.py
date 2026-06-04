@@ -11,10 +11,6 @@ def admin() -> bool:
 
 
 def _mostrar_error_permisos() -> None:
-    """
-    Muestra una ventana Tkinter con un mensaje claro antes de cerrar.
-    Si Tkinter no está disponible, cae al comportamiento anterior (consola).
-    """
     try:
         import tkinter as tk
         from tkinter import ttk

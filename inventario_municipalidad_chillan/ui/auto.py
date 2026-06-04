@@ -44,7 +44,6 @@ def build_auto_frame(app, parent) -> None:
 
 
 def _label_serie_obligatorio(parent, texto: str) -> ttk.Frame:
-    """Label con * rojo para el campo de N° serie (obligatorio)."""
     cont = ttk.Frame(parent)
     ttk.Label(
         cont,
@@ -62,7 +61,6 @@ def _label_serie_obligatorio(parent, texto: str) -> ttk.Frame:
 
 
 def _label_opcional(parent, texto: str) -> ttk.Frame:
-    """Label estándar para campo opcional."""
     cont = ttk.Frame(parent)
     ttk.Label(
         cont,

@@ -99,7 +99,6 @@ def _es_valor_util(valor) -> bool:
     }:
         return False
 
-    # Evita guardar versiones genéricas como "1.0" o "Rev 1".
     if re.fullmatch(r"(v|ver|version|rev)?\.?\s*\d+(\.\d+)?", texto.lower()):
         return False
 
@@ -183,15 +182,12 @@ def _tipo_desde_chassis(chassis_types) -> str | None:
     except Exception:
         tipos = []
 
-    # 13 corresponde comúnmente a All in One.
     if 13 in tipos:
         return "All in One"
 
-    # Valores comunes para notebook / portátil.
     if any(x in tipos for x in (8, 9, 10, 14, 30, 31, 32)):
         return "Notebook"
 
-    # Valores comunes para escritorio/torre.
     if any(x in tipos for x in (3, 4, 5, 6, 7, 15, 16)):
         return "Torre"
 
@@ -199,13 +195,6 @@ def _tipo_desde_chassis(chassis_types) -> str | None:
 
 
 def _elegir_modelo(data: dict, tipo: str) -> str:
-    """
-    Prioridad pensada para inventario:
-    - En Lenovo, ProductVersion suele ser más descriptivo:
-      Ej: IdeaCentre AIO 3 24ARE05.
-    - ComputerSystem.Model / ProductName pueden ser códigos técnicos:
-      Ej: F0EW005VCL.
-    """
 
     candidatos = [
         data.get("ProductVersion"),
@@ -295,12 +284,6 @@ $enclosure = Get-CimInstance Win32_SystemEnclosure | Select-Object ChassisTypes,
         if data.get(campo)
     )
 
-    # Prioridad tipo:
-    # 1. ChassisTypes, porque confirma All in One cuando viene {13}.
-    # 2. Texto del modelo/producto.
-    # 3. detector existente.
-    # 4. PCSystemType.
-    # 5. fallback Torre.
     tipo = _tipo_desde_chassis(data.get("ChassisTypes"))
     tipo = tipo or _normalizar_tipo(texto_equipo)
 

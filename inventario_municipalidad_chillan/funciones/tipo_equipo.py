@@ -3,17 +3,17 @@ import subprocess
 
 
 CHASSIS_NOTEBOOK = {
-    8,   # Portable
-    9,   # Laptop
-    10,  # Notebook
-    14,  # Sub Notebook
-    30,  # Tablet
-    31,  # Convertible
-    32,  # Detachable
+    8, 
+    9,   
+    10,  
+    14,  
+    30,  
+    31,  
+    32,  
 }
 
 CHASSIS_ALL_IN_ONE = {
-    13,  # All in One
+    13, 
 }
 
 PALABRAS_NOTEBOOK = (

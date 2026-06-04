@@ -306,12 +306,10 @@ def _buscar_serial_impresora(
         if not coincide:
             continue
 
-        # Prioridad 1: serial físico USB desde registro de Windows.
         for serial in _seriales_desde_lista(seriales_usb):
             if serial:
                 return serial
 
-        # Prioridad 2: respaldo desde propiedades/rutas PnP.
         for candidato in (
             parent_device_id,
             bus_parent,
@@ -327,12 +325,6 @@ def _buscar_serial_impresora(
 
 
 def _obtener_pnp_rapido() -> tuple[list[dict], list[dict]]:
-    """
-    Primera etapa rápida:
-    - obtiene impresoras reales
-    - busca serial físico USB desde el registro
-    - no usa Get-PnpDeviceProperty
-    """
     script = r"""
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -500,11 +492,6 @@ $pnp = foreach ($d in $pnpBase) {
 
 
 def _obtener_pnp_respaldo(nombre: str, driver: str) -> list[dict]:
-    """
-    Segunda etapa pesada:
-    solo se llama cuando la etapa rápida no encontró serial.
-    Usa Get-PnpDeviceProperty para ParentDeviceID / BusParent.
-    """
     regex = _crear_regex_busqueda(nombre, driver)
     regex_ps = json.dumps(regex)
 

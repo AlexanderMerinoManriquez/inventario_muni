@@ -1,4 +1,3 @@
-# ── Formateo de capacidad ──────────────────────────────────────────────────────
 def formatear_capacidad(valor: str) -> str:
     texto  = str(valor or "").strip().replace(",", ".")
     partes = texto.split()

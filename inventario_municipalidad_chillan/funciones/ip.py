@@ -3,16 +3,6 @@ import psutil
 
 
 def obtener_ip() -> str:
-    """
-    Retorna la IP de red real del equipo (excluye loopback y direcciones APIPA).
-
-    Estrategia:
-    1. Itera las interfaces de red con psutil buscando una IPv4 válida.
-       Prioriza interfaces con nombre típico de red cableada/WiFi (Ethernet, Wi-Fi,
-       Local Area Connection, etc.) sobre interfaces virtuales o VPN.
-    2. Si psutil no encuentra nada útil, cae al método original con socket.
-    3. Si todo falla, retorna "IP desconocida".
-    """
     try:
         interfaces = psutil.net_if_addrs()
         stats = psutil.net_if_stats()

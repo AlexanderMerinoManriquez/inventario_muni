@@ -12,19 +12,6 @@ MAX_BYTES_POR_LOG = 2 * 1024 * 1024
 
 
 def setup_logger() -> None:
-    """
-    Configura el logger principal de la aplicación.
-
-    Cambios respecto a la versión anterior:
-    - El nombre del archivo ahora incluye hora (YYYYMMDD_HHMMSS) para evitar
-      colisiones si la app se abre varias veces el mismo día.
-    - Se agrega un RotatingFileHandler para no acumular logs indefinidamente.
-    - Se agrega un StreamHandler en DEBUG para que los errores también aparezcan
-      en consola durante el desarrollo (no molesta en producción porque la app
-      corre con pythonw.exe o similar sin consola visible).
-    - Se usan 'force=True' y se limpia cualquier handler previo para evitar
-      el problema de logs vacíos cuando basicConfig ya fue llamado antes.
-    """
     logs_dir = os.path.join(BASE_DIR, "logs")
     os.makedirs(logs_dir, exist_ok=True)
 
@@ -64,10 +51,6 @@ def setup_logger() -> None:
 
 
 def limpiar_logs_antiguos(max_archivos: int = MAX_ARCHIVOS_LOG) -> None:
-    """
-    Elimina los archivos de log más antiguos si superan el límite.
-    Llamar opcionalmente al inicio de la app para mantener la carpeta ordenada.
-    """
     logs_dir = os.path.join(BASE_DIR, "logs")
 
     if not os.path.isdir(logs_dir):
