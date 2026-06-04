@@ -223,7 +223,7 @@ class InventarioApp:
         self.id_registrador_seleccionado = None
         self.var_nombre_registrador.set("")
 
-    # ── Estados vacíos ─────────────────────────────────────────────────────────
+    # ── Estados vacíos — Monitores ─────────────────────────────────────────────
     def _mostrar_estado_monitores_vacio(self) -> None:
         self.monitores_vars.clear()
         if hasattr(self, "monitores_container"):
@@ -239,18 +239,25 @@ class InventarioApp:
         if hasattr(self, "monitores_container"):
             self.monitores_container.pack(fill="x", padx=10, pady=(0, 6))
 
+    # ── Estados vacíos — Impresoras ────────────────────────────────────────────
     def _mostrar_estado_impresoras_vacio(self) -> None:
         self.impresoras_vars.clear()
+
         if hasattr(self, "impresoras_container"):
             for child in self.impresoras_container.winfo_children():
-                child.destroy()
+                try:
+                    child.destroy()
+                except Exception:
+                    pass
             self.impresoras_container.pack_forget()
+
         if hasattr(self, "lbl_impresoras_vacio"):
             self.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
 
     def _ocultar_estado_impresoras_vacio(self) -> None:
         if hasattr(self, "lbl_impresoras_vacio"):
             self.lbl_impresoras_vacio.pack_forget()
+
         if hasattr(self, "impresoras_container"):
             self.impresoras_container.pack(fill="x", padx=10, pady=(0, 6))
 
@@ -341,8 +348,6 @@ class InventarioApp:
         if not self.monitores_vars:
             self._mostrar_estado_monitores_vacio()
 
-        # ── Impresoras: NO se cargan automáticamente ───────────────────────────
-        # El usuario debe presionar "Buscar impresoras" manualmente.
         self._mostrar_estado_impresoras_vacio()
 
         if errores:
@@ -358,8 +363,15 @@ class InventarioApp:
     # ── Buscar impresoras (acción manual) ──────────────────────────────────────
     def buscar_impresoras(self) -> None:
         """Detecta impresoras activas bajo demanda, reemplazando cualquier lista previa."""
+        texto_boton = "🔍 Buscar impresoras"
+
         if hasattr(self, "btn_buscar_impresoras"):
-            self.btn_buscar_impresoras.config(state="disabled", text="⏳ Buscando…")
+            self.btn_buscar_impresoras.config(state="disabled", text=texto_boton)
+
+        if hasattr(self, "btn_agregar_impresora"):
+            self.btn_agregar_impresora.config(state="disabled")
+
+        self._set_estado("● Buscando impresoras…", C["gris_sub"])
         self.root.update_idletasks()
 
         try:
@@ -373,13 +385,18 @@ class InventarioApp:
             impresoras = []
         finally:
             if hasattr(self, "btn_buscar_impresoras"):
-                self.btn_buscar_impresoras.config(state="normal", text="🔍 Buscar impresoras")
+                self.btn_buscar_impresoras.config(state="normal", text=texto_boton)
 
-        # Limpiar bloques anteriores antes de agregar los nuevos
+            if hasattr(self, "btn_agregar_impresora"):
+                self.btn_agregar_impresora.config(state="normal")
+
+        self.impresoras_vars.clear()
         if hasattr(self, "impresoras_container"):
             for child in self.impresoras_container.winfo_children():
-                child.destroy()
-        self.impresoras_vars.clear()
+                try:
+                    child.destroy()
+                except Exception:
+                    pass
 
         if not impresoras:
             self._mostrar_estado_impresoras_vacio()

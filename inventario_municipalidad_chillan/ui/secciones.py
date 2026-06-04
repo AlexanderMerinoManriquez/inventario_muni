@@ -54,8 +54,6 @@ def build_monitores_frame(app, parent) -> None:
         foreground=C["gris_sub"],
         font=LABEL_FONT,
     )
-    app.lbl_monitores_vacio.pack(fill="x", padx=10, pady=(0, 8))
-    app.lbl_monitores_vacio.pack_forget()
 
     app.monitores_container = ttk.Frame(frame)
     app.monitores_container.pack(fill="x", padx=10, pady=(0, 6))
@@ -66,8 +64,8 @@ def build_impresoras_frame(app, parent) -> None:
     frame = app._seccion(parent, "Impresoras asignadas")
 
     # ── Fila de botones ────────────────────────────────────────────────────────
-    fila_botones = ttk.Frame(frame)
-    fila_botones.pack(anchor="w", padx=10, pady=(4, 2), fill="x")
+    fila_botones = tk.Frame(frame, bg=C.get("blanco", "white"), bd=0, highlightthickness=0)
+    fila_botones.pack(anchor="w", padx=10, pady=(4, 2))
 
     app.btn_buscar_impresoras = ttk.Button(
         fila_botones,
@@ -81,16 +79,14 @@ def build_impresoras_frame(app, parent) -> None:
         "Detectar las impresoras activas conectadas a este equipo",
     )
 
-    btn_agregar = ttk.Button(
+    app.btn_agregar_impresora = ttk.Button(
         fila_botones,
         text="＋ Agregar impresora",
         style="Add.TButton",
         command=app._crear_bloque_impresora,
     )
-    btn_agregar.pack(side="left")
-    Tooltip(btn_agregar, "Agregar una impresora manualmente si corresponde")
-
-    # ── Aviso inicial ──────────────────────────────────────────────────────────
+    app.btn_agregar_impresora.pack(side="left")
+    Tooltip(app.btn_agregar_impresora, "Agregar una impresora manualmente si corresponde")
     app.lbl_impresoras_vacio = ttk.Label(
         frame,
         text=(
@@ -102,15 +98,12 @@ def build_impresoras_frame(app, parent) -> None:
         wraplength=420,
         justify="left",
     )
-    app.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
 
     app.impresoras_container = ttk.Frame(frame)
-    app.impresoras_container.pack(fill="x", padx=10, pady=(0, 6))
-    app.impresoras_container.pack_forget()
 
 
 def build_observaciones_frame(app, parent) -> None:
-    frame = app._seccion(parent, "Observaciones del inventario", fill="both", expand=True)
+    frame = app._seccion(parent, "Observaciones del inventario", fill="x", expand=False)
 
     ttk.Label(
         frame,
@@ -121,7 +114,8 @@ def build_observaciones_frame(app, parent) -> None:
 
     app.txt_observaciones = ScrolledText(
         frame,
-        height=5,
+        height=5,        
+        width=1,        
         wrap="word",
         font=("Segoe UI", 10),
         relief="flat",
@@ -131,7 +125,7 @@ def build_observaciones_frame(app, parent) -> None:
         highlightbackground=C["gris_borde"],
         highlightcolor=C["rojo"],
     )
-    app.txt_observaciones.pack(fill="both", expand=True, padx=10, pady=(0, 8))
+    app.txt_observaciones.pack(fill="x", expand=False, padx=10, pady=(0, 8))
 
 
 def build_acciones_frame(app, parent) -> None:
