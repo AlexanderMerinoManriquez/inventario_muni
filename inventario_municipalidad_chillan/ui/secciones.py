@@ -65,23 +65,44 @@ def build_monitores_frame(app, parent) -> None:
 def build_impresoras_frame(app, parent) -> None:
     frame = app._seccion(parent, "Impresoras asignadas")
 
-    btn = ttk.Button(
-        frame,
+    # ── Fila de botones ────────────────────────────────────────────────────────
+    fila_botones = ttk.Frame(frame)
+    fila_botones.pack(anchor="w", padx=10, pady=(4, 2), fill="x")
+
+    app.btn_buscar_impresoras = ttk.Button(
+        fila_botones,
+        text="🔍 Buscar impresoras",
+        style="Edit.TButton",
+        command=app.buscar_impresoras,
+    )
+    app.btn_buscar_impresoras.pack(side="left", padx=(0, 8))
+    Tooltip(
+        app.btn_buscar_impresoras,
+        "Detectar las impresoras activas conectadas a este equipo",
+    )
+
+    btn_agregar = ttk.Button(
+        fila_botones,
         text="＋ Agregar impresora",
         style="Add.TButton",
         command=app._crear_bloque_impresora,
     )
-    btn.pack(anchor="w", padx=10, pady=(4, 6))
-    Tooltip(btn, "Agregar una impresora manualmente si corresponde")
+    btn_agregar.pack(side="left")
+    Tooltip(btn_agregar, "Agregar una impresora manualmente si corresponde")
 
+    # ── Aviso inicial ──────────────────────────────────────────────────────────
     app.lbl_impresoras_vacio = ttk.Label(
         frame,
-        text="No se detectaron impresoras activas. Puedes agregar una manualmente si corresponde.",
+        text=(
+            "Las impresoras no se detectan automáticamente. "
+            "Presiona \"Buscar impresoras\" o agrega una manualmente."
+        ),
         foreground=C["gris_sub"],
         font=LABEL_FONT,
+        wraplength=420,
+        justify="left",
     )
     app.lbl_impresoras_vacio.pack(fill="x", padx=10, pady=(0, 8))
-    app.lbl_impresoras_vacio.pack_forget()
 
     app.impresoras_container = ttk.Frame(frame)
     app.impresoras_container.pack(fill="x", padx=10, pady=(0, 6))

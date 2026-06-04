@@ -1,15 +1,29 @@
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-logs/
-*.log
-
-RESPALDOS_FALLIDOS/
-
+# Entornos virtuales
 .venv/
 venv/
+env/
 
+# PyInstaller
 build/
 dist/
+*.spec
+
+# Mantener este si usarás tu spec personalizado
+!inventario.spec
+
+# Logs y respaldos locales
+logs/
+RESPALDOS_FALLIDOS/
+
+# VS Code opcional
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db

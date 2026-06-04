@@ -341,18 +341,9 @@ class InventarioApp:
         if not self.monitores_vars:
             self._mostrar_estado_monitores_vacio()
 
-        try:
-            impresoras = obtener_impresoras_activas()
-        except Exception as e:
-            impresoras = []
-            errores.append(f"impresoras: {e}")
-            logging.error("Error obteniendo impresoras", exc_info=True)
-
-        for impresora in impresoras:
-            self._crear_bloque_impresora(impresora)
-
-        if not self.impresoras_vars:
-            self._mostrar_estado_impresoras_vacio()
+        # ── Impresoras: NO se cargan automáticamente ───────────────────────────
+        # El usuario debe presionar "Buscar impresoras" manualmente.
+        self._mostrar_estado_impresoras_vacio()
 
         if errores:
             self._set_estado("● Carga parcial con errores", C["amarillo"])
@@ -363,6 +354,49 @@ class InventarioApp:
             )
         else:
             self._set_estado("● Datos automáticos cargados ✓", C["verde"])
+
+    # ── Buscar impresoras (acción manual) ──────────────────────────────────────
+    def buscar_impresoras(self) -> None:
+        """Detecta impresoras activas bajo demanda, reemplazando cualquier lista previa."""
+        if hasattr(self, "btn_buscar_impresoras"):
+            self.btn_buscar_impresoras.config(state="disabled", text="⏳ Buscando…")
+        self.root.update_idletasks()
+
+        try:
+            impresoras = obtener_impresoras_activas()
+        except Exception as e:
+            logging.error("Error obteniendo impresoras", exc_info=True)
+            messagebox.showerror(
+                "Error al buscar impresoras",
+                f"No se pudieron detectar impresoras:\n\n{e}",
+            )
+            impresoras = []
+        finally:
+            if hasattr(self, "btn_buscar_impresoras"):
+                self.btn_buscar_impresoras.config(state="normal", text="🔍 Buscar impresoras")
+
+        # Limpiar bloques anteriores antes de agregar los nuevos
+        if hasattr(self, "impresoras_container"):
+            for child in self.impresoras_container.winfo_children():
+                child.destroy()
+        self.impresoras_vars.clear()
+
+        if not impresoras:
+            self._mostrar_estado_impresoras_vacio()
+            messagebox.showinfo(
+                "Impresoras",
+                "No se detectaron impresoras activas en este equipo.",
+            )
+            return
+
+        for impresora in impresoras:
+            self._crear_bloque_impresora(impresora)
+
+        total = len(self.impresoras_vars)
+        self._set_estado(
+            f"● {total} impresora{'s' if total != 1 else ''} detectada{'s' if total != 1 else ''} ✓",
+            C["verde"],
+        )
 
     # ── Envío ──────────────────────────────────────────────────────────────────
     def enviar_datos(self) -> None:
@@ -525,4 +559,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    
