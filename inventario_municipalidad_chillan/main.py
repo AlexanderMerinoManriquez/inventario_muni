@@ -362,7 +362,6 @@ class InventarioApp:
 
     # ── Buscar impresoras (acción manual) ──────────────────────────────────────
     def buscar_impresoras(self) -> None:
-        """Detecta impresoras activas bajo demanda, reemplazando cualquier lista previa."""
         texto_boton = "🔍 Buscar impresoras"
 
         if hasattr(self, "btn_buscar_impresoras"):
