@@ -75,6 +75,108 @@ def normalizar_ram_gb(valor) -> float | None:
     return float(min(valores_ram, key=lambda x: abs(x - ram)))
 
 
+def _texto_manual_util(valor) -> str | None:
+    texto = str(valor or "").strip()
+
+    if not texto:
+        return None
+
+    texto_mayus = texto.upper()
+
+    if texto_mayus in (
+        "-",
+        "—",
+        "CARGANDO",
+        "CARGANDO...",
+        "CARGANDO…",
+        "ERROR",
+        "NO DETECTADO",
+        "NO DETECTADA",
+    ):
+        return None
+
+    return texto
+
+
+def _normalizar_tipo_disco_manual(valor: str) -> str | None:
+    texto = str(valor or "").upper()
+
+    if any(x in texto for x in (
+        "SSD",
+        "NVME",
+        "NVMe".upper(),
+        "M.2",
+        "SOLIDO",
+        "SÓLIDO",
+        "ESTADO SOLIDO",
+        "ESTADO SÓLIDO",
+    )):
+        return "SSD"
+
+    if any(x in texto for x in (
+        "HDD",
+        "MECANICO",
+        "MECÁNICO",
+        "DISCO DURO",
+    )):
+        return "HDD"
+
+    return None
+
+
+def _extraer_capacidad_gb_manual(valor: str) -> float | None:
+    texto = _texto_manual_util(valor)
+
+    if not texto:
+        return None
+
+    try:
+        capacidad = extraer_capacidad_gb(texto)
+
+        if capacidad:
+            return capacidad
+
+    except Exception:
+        pass
+
+    texto_normalizado = texto.upper().replace(",", ".")
+
+    match = re.search(r"(\d+(?:\.\d+)?)\s*(TB|GB)", texto_normalizado)
+
+    if match:
+        valor_num = float(match.group(1))
+        unidad = match.group(2)
+
+        if unidad == "TB":
+            valor_num *= 1024
+
+        return round(valor_num, 2)
+
+    match_simple = re.search(r"\d+(?:\.\d+)?", texto_normalizado)
+
+    if match_simple:
+        return float(match_simple.group())
+
+    return None
+
+
+def _resolver_disco_principal_payload(app) -> tuple[str | None, float | None]:
+    try:
+        texto_manual = app._get_auto("disco_principal")
+    except Exception:
+        texto_manual = None
+
+    texto_manual = _texto_manual_util(texto_manual)
+
+    if not texto_manual:
+        return None, None
+
+    tipo_manual = _normalizar_tipo_disco_manual(texto_manual)
+    capacidad_manual = _extraer_capacidad_gb_manual(texto_manual)
+
+    return tipo_manual, capacidad_manual
+
+
 def _limpiar_items(vars_lista: list[dict], campos: tuple[str, ...]) -> list[dict]:
     items = []
 
@@ -151,7 +253,7 @@ def construir_payload(app) -> dict:
         for clave, _ in app.AUTO_FIELDS
     }
 
-    disco_principal, _ = separar_disco_principal(app.discos_fisicos)
+    tipo_disco_principal, capacidad_disco_principal_gb = _resolver_disco_principal_payload(app)
 
     equipo = {
         "codigo_inventario_equipo": normalizar_codigo_inventario(
@@ -169,12 +271,8 @@ def construir_payload(app) -> dict:
         "sistema_operativo": auto.get("sistema_operativo"),
         "procesador": auto.get("cpu"),
         "ram_gb": normalizar_ram_gb(auto.get("ram")),
-        "tipo_disco_principal": limpiar_texto(
-            str((disco_principal or {}).get("tipo", "")).upper()
-        ),
-        "capacidad_disco_principal_gb": extraer_capacidad_gb(
-            (disco_principal or {}).get("capacidad")
-        ),
+        "tipo_disco_principal": tipo_disco_principal,
+        "capacidad_disco_principal_gb": capacidad_disco_principal_gb,
         "ip": auto.get("ip"),
         "anydesk": auto.get("anydesk"),
     }
